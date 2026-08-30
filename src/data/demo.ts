@@ -18,10 +18,10 @@ const datasetSource = 'https://github.com/hasaneyldrm/exercises-dataset'
 
 export const demoProfiles: Profile[] = [
   {
-    id: 'user-facundo',
-    username: 'facundo',
-    displayName: 'Facundo Ruiz',
-    firstName: 'Facundo',
+    id: 'user-fabricio',
+    username: 'fabricio',
+    displayName: 'Fabricio Ruiz',
+    firstName: 'Fabricio',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=85',
     heightCm: 181,
     weightKg: 82.4,
@@ -189,24 +189,24 @@ function makeMetrics(userId: string, baseSteps: number, baseCalories: number, ba
   })
 }
 
-const facundoDays = makeDays('user-facundo', 'facundo', false)
+const fabricioDays = makeDays('user-fabricio', 'fabricio', false)
 const mariaDays = makeDays('user-maria', 'maria', true)
 const historicalSessions = [
-  makeHistoricalSession('user-facundo', facundoDays[0], 1, 1.02), makeHistoricalSession('user-facundo', facundoDays[1], 3, 0.98), makeHistoricalSession('user-facundo', facundoDays[2], 5, 1.01), makeHistoricalSession('user-facundo', facundoDays[0], 8, 0.95), makeHistoricalSession('user-facundo', facundoDays[1], 10, 0.96), makeHistoricalSession('user-facundo', facundoDays[2], 13, 0.94),
+  makeHistoricalSession('user-fabricio', fabricioDays[0], 1, 1.02), makeHistoricalSession('user-fabricio', fabricioDays[1], 3, 0.98), makeHistoricalSession('user-fabricio', fabricioDays[2], 5, 1.01), makeHistoricalSession('user-fabricio', fabricioDays[0], 8, 0.95), makeHistoricalSession('user-fabricio', fabricioDays[1], 10, 0.96), makeHistoricalSession('user-fabricio', fabricioDays[2], 13, 0.94),
   makeHistoricalSession('user-maria', mariaDays[0], 2, 1.01), makeHistoricalSession('user-maria', mariaDays[1], 4, 1.02), makeHistoricalSession('user-maria', mariaDays[2], 6, 0.99), makeHistoricalSession('user-maria', mariaDays[0], 9, 0.96), makeHistoricalSession('user-maria', mariaDays[1], 12, 0.97),
 ]
 
 const now = new Date().toISOString()
 
 const nutritionPlans: NutritionPlan[] = [
-  { id: 'nutrition-facundo', userId: 'user-facundo', calories: 2200, protein: 180, carbs: 220, fats: 70, fiber: 30, notes: 'Keep protein steady around training days.', startsOn: '2026-07-01', updatedAt: now },
+  { id: 'nutrition-fabricio', userId: 'user-fabricio', calories: 2200, protein: 180, carbs: 220, fats: 70, fiber: 30, notes: 'Keep protein steady around training days.', startsOn: '2026-07-01', updatedAt: now },
   { id: 'nutrition-maria', userId: 'user-maria', calories: 1900, protein: 135, carbs: 190, fats: 62, fiber: 28, notes: 'Prioritize a calm, consistent breakfast.', startsOn: '2026-07-01', updatedAt: now },
 ]
 
 const personalRecords: PersonalRecord[] = [
-  { id: 'pr-facundo-squat', userId: 'user-facundo', exerciseId: 'exercise-squat', recordType: 'weight', value: 77.5, unit: 'kg', achievedAt: daysAgo(1).toISOString(), label: 'Barbell Full Squat · max weight' },
-  { id: 'pr-facundo-deadlift', userId: 'user-facundo', exerciseId: 'exercise-deadlift', recordType: 'weight', value: 95, unit: 'kg', achievedAt: daysAgo(3).toISOString(), label: 'Barbell Deadlift · max weight' },
-  { id: 'pr-facundo-streak', userId: 'user-facundo', recordType: 'streak', value: 8, unit: 'days', achievedAt: daysAgo(4).toISOString(), label: 'Longest training streak' },
+  { id: 'pr-fabricio-squat', userId: 'user-fabricio', exerciseId: 'exercise-squat', recordType: 'weight', value: 77.5, unit: 'kg', achievedAt: daysAgo(1).toISOString(), label: 'Barbell Full Squat · max weight' },
+  { id: 'pr-fabricio-deadlift', userId: 'user-fabricio', exerciseId: 'exercise-deadlift', recordType: 'weight', value: 95, unit: 'kg', achievedAt: daysAgo(3).toISOString(), label: 'Barbell Deadlift · max weight' },
+  { id: 'pr-fabricio-streak', userId: 'user-fabricio', recordType: 'streak', value: 8, unit: 'days', achievedAt: daysAgo(4).toISOString(), label: 'Longest training streak' },
   { id: 'pr-maria-squat', userId: 'user-maria', exerciseId: 'exercise-squat', recordType: 'weight', value: 50, unit: 'kg', achievedAt: daysAgo(2).toISOString(), label: 'Barbell Full Squat · max weight' },
   { id: 'pr-maria-bench', userId: 'user-maria', exerciseId: 'exercise-bench', recordType: 'weight', value: 37.5, unit: 'kg', achievedAt: daysAgo(4).toISOString(), label: 'Barbell Bench Press · max weight' },
   { id: 'pr-maria-streak', userId: 'user-maria', recordType: 'streak', value: 6, unit: 'days', achievedAt: daysAgo(6).toISOString(), label: 'Longest training streak' },
@@ -214,9 +214,9 @@ const personalRecords: PersonalRecord[] = [
 
 const activityEvents: ActivityEvent[] = [
   { id: 'event-1', userId: 'user-maria', eventType: 'personal_record', title: 'María reached a new PR', description: 'Barbell Bench Press · 37.5 kg', entityType: 'personal_record', entityId: 'pr-maria-bench', createdAt: daysAgo(1).toISOString() },
-  { id: 'event-2', userId: 'user-facundo', eventType: 'workout_completed', title: 'Facundo completed Upper focus', description: '42 min · 3,840 kg volume', entityType: 'workout_session', entityId: 'session-user-facundo-3', createdAt: daysAgo(2).toISOString() },
+  { id: 'event-2', userId: 'user-fabricio', eventType: 'workout_completed', title: 'Fabricio completed Upper focus', description: '42 min · 3,840 kg volume', entityType: 'workout_session', entityId: 'session-user-fabricio-3', createdAt: daysAgo(2).toISOString() },
   { id: 'event-3', userId: 'user-maria', eventType: 'step_goal_reached', title: 'María reached her step goal', description: '9,842 steps · nice rhythm', entityType: 'daily_metric', createdAt: daysAgo(2).toISOString() },
-  { id: 'event-4', userId: 'user-facundo', eventType: 'workout_completed', title: 'Facundo completed Lower strength', description: '48 min · 5,120 kg volume', entityType: 'workout_session', entityId: 'session-user-facundo-1', createdAt: daysAgo(3).toISOString() },
+  { id: 'event-4', userId: 'user-fabricio', eventType: 'workout_completed', title: 'Fabricio completed Lower strength', description: '48 min · 5,120 kg volume', entityType: 'workout_session', entityId: 'session-user-fabricio-1', createdAt: daysAgo(3).toISOString() },
   { id: 'event-5', userId: 'user-maria', eventType: 'workout_completed', title: 'María completed Engine & core', description: '32 min · 2,180 kg volume', entityType: 'workout_session', entityId: 'session-user-maria-6', createdAt: daysAgo(6).toISOString() },
 ]
 
@@ -224,9 +224,9 @@ export const demoState: AppState = {
   profiles: demoProfiles,
   nutritionPlans,
   exercises: demoExercises,
-  workoutDays: [...facundoDays, ...mariaDays],
+  workoutDays: [...fabricioDays, ...mariaDays],
   sessions: historicalSessions,
-  dailyMetrics: [...makeMetrics('user-facundo', 8700, 1780, 82.4), ...makeMetrics('user-maria', 7900, 1570, 62.8)],
+  dailyMetrics: [...makeMetrics('user-fabricio', 8700, 1780, 82.4), ...makeMetrics('user-maria', 7900, 1570, 62.8)],
   personalRecords,
   activityEvents,
 }

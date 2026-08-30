@@ -11,8 +11,8 @@ export interface DemoAccount {
 }
 
 export const demoAccounts: DemoAccount[] = [
-  { username: 'facundo', passwordHash: '0b95e659b8675f54127f4c38838335c59c728a743b4b783e92278ab3cbad9054', profileId: 'user-facundo' },
-  { username: 'maria', passwordHash: '2043a60d06b5ca09c4e3f90f3672370ebf9beda6c8dc85f201795cb75d6c314f', profileId: 'user-maria' },
+  { username: 'fabricio', passwordHash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', profileId: 'user-fabricio' },
+  { username: 'maria', passwordHash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', profileId: 'user-maria' },
 ]
 
 export function usernameToEmail(username: string) {

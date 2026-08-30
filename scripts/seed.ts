@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 import { createHash } from 'node:crypto'
 import { demoState } from '../src/data/demo'
@@ -9,7 +10,7 @@ if (!supabaseUrl || !serviceRoleKey) throw new Error('Set VITE_SUPABASE_URL and 
 
 const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
 const coupleId = '11111111-1111-4111-8111-111111111111'
-const accountPasswords: Record<string, string | undefined> = { facundo: process.env.FACUNDO_PASSWORD, maria: process.env.MARIA_PASSWORD }
+const accountPasswords: Record<string, string | undefined> = { fabricio: process.env.FABRICIO_PASSWORD, maria: process.env.MARIA_PASSWORD }
 
 function stableUuid(value: string) {
   const hex = createHash('sha256').update(value).digest('hex').slice(0, 32).split('')
@@ -41,7 +42,7 @@ function exerciseRow(exercise: Exercise) {
 }
 
 async function seed() {
-  const userIds: Record<string, string> = { facundo: await getOrCreateUser('facundo'), maria: await getOrCreateUser('maria') }
+  const userIds: Record<string, string> = { fabricio: await getOrCreateUser('fabricio'), maria: await getOrCreateUser('maria') }
   await upsert('couples', [{ id: coupleId, name: 'Train Together' }])
   const profiles = demoState.profiles.map((profile: Profile) => ({ id: userIds[profile.username], username: profile.username, display_name: profile.displayName, first_name: profile.firstName, avatar_url: profile.avatarUrl, height_cm: profile.heightCm, weight_kg: profile.weightKg, daily_step_goal: profile.dailyStepGoal, daily_calorie_goal: profile.dailyCalorieGoal, active: profile.active }))
   await upsert('profiles', profiles)

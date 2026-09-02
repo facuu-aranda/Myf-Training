@@ -21,11 +21,13 @@ export function getCompletedSetsForPlan(day: WorkoutDay, exerciseIndex: number, 
   return 0
 }
 
-export function getNextLivePosition(day: WorkoutDay, completedSets: ExerciseSet[]): LivePosition | null {
+export function getNextLivePosition(day: WorkoutDay, completedSets: ExerciseSet[], skippedSetCounts: Record<string, number> = {}): LivePosition | null {
   const plans = day.exercises.slice().sort((a, b) => a.orderIndex - b.orderIndex)
   for (let exerciseIndex = 0; exerciseIndex < plans.length; exerciseIndex += 1) {
     const completedForPlan = getCompletedSetsForPlan(day, exerciseIndex, completedSets)
-    if (completedForPlan < plans[exerciseIndex].sets) return { exerciseIndex, setIndex: completedForPlan }
+    const skippedForPlan = Math.max(0, skippedSetCounts[plans[exerciseIndex].id] ?? 0)
+    const occupiedSets = completedForPlan + skippedForPlan
+    if (occupiedSets < plans[exerciseIndex].sets) return { exerciseIndex, setIndex: occupiedSets }
   }
   return null
 }

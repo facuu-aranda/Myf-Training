@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, BarChart3, BookOpen, CalendarDays, Dumbbell, History, LayoutDashboard, LogOut, Menu, Settings2, Sparkles, Users, X, Zap } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, CalendarDays, Dumbbell, History, LayoutDashboard, LogOut, Menu, Settings2, Sparkles, Utensils, Users, X, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +11,7 @@ import { cn } from '../lib/utils'
 const navItems = [
   { to: '/app', key: 'overview', icon: LayoutDashboard, end: true },
   { to: '/app/strategy', key: 'strategy', icon: CalendarDays },
+  { to: '/app/nutrition/foods', key: 'nutrition', icon: Utensils },
   { to: '/app/live', key: 'live', icon: Activity },
   { to: '/app/quick-log', key: 'quickLog', icon: Zap },
   { to: '/app/progress', key: 'progress', icon: BarChart3 },
@@ -18,7 +19,7 @@ const navItems = [
   { to: '/app/couple', key: 'couple', icon: Users },
   { to: '/app/exercises', key: 'exercises', icon: BookOpen },
 ]
-const mobileNavItems = navItems.filter(({ key }) => ['overview', 'strategy', 'live', 'progress', 'couple'].includes(key))
+const mobileNavItems = navItems.filter(({ key }) => ['overview', 'live', 'nutrition', 'progress', 'couple'].includes(key))
 
 export function AppShell() {
   const { t } = useTranslation()

@@ -1,3 +1,5 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
 export type Language = 'en' | 'es'
 
 export type SessionStatus = 'active' | 'completed' | 'abandoned'
@@ -8,6 +10,247 @@ export type ActivityEventType =
   | 'personal_record'
   | 'workout_started'
   | 'metric_updated'
+
+export type NutritionBasis = 'per_100g' | 'per_100ml' | 'per_unit'
+export type FoodUnit = 'g' | 'kg' | 'mg' | 'ml' | 'l' | 'unit' | 'cup' | 'tablespoon' | 'teaspoon' | 'slice' | 'portion' | 'piece'
+
+export interface FoodSource {
+  id: string
+  sourceKey: string
+  name: string
+  sourceUrl: string
+  license: string
+  attribution: string
+  importedAt: string
+  metadata: Record<string, Json>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FoodNutrition {
+  id: string
+  foodId: string
+  basis: NutritionBasis
+  calories: number | null
+  proteinG: number | null
+  carbohydratesG: number | null
+  fatG: number | null
+  fiberG: number | null
+  saturatedFatG: number | null
+  sugarG: number | null
+  sodiumMg: number | null
+  cholesterolMg: number | null
+  micronutrients: Record<string, number | null>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FoodPortion {
+  id: string
+  foodId: string
+  label: string
+  unit: FoodUnit
+  grams: number | null
+  milliliters: number | null
+  isDefault: boolean
+  metadata: Record<string, Json>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Food {
+  id: string
+  sourceId: string
+  externalId: string
+  name: string
+  nameEs: string
+  nameEn: string
+  description: string
+  category: string
+  categoryEs: string
+  categoryEn: string
+  subcategory: string
+  subcategoryEs: string
+  subcategoryEn: string
+  foodGroup: string
+  brand: string
+  barcode: string
+  defaultUnit: FoodUnit
+  isBasicFood: boolean
+  isPackaged: boolean
+  metadata: Record<string, Json>
+  source?: FoodSource
+  nutrients: FoodNutrition[]
+  portions: FoodPortion[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type RecipeVisibility = 'private' | 'household' | 'system'
+
+export interface RecipeIngredient {
+  id: string
+  recipeId: string
+  foodId: string
+  foodPortionId?: string
+  quantity: number
+  unit: FoodUnit
+  normalizedGrams: number | null
+  normalizedMilliliters: number | null
+  notes: string
+  orderIndex: number
+  food?: Food
+  portion?: FoodPortion
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Recipe {
+  id: string
+  createdBy: string | null
+  coupleId: string | null
+  name: string
+  nameEs: string
+  description: string
+  instructions: string
+  prepTimeMinutes: number
+  cookTimeMinutes: number
+  servings: number
+  imageUrl: string
+  visibility: RecipeVisibility
+  ingredients: RecipeIngredient[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'pre_workout' | 'post_workout' | 'other'
+export type FoodPrecision = 'exact' | 'estimated' | 'portion'
+export type FoodLogVisibility = 'private' | 'household'
+
+export interface FoodLogItem {
+  id: string
+  foodLogId: string
+  foodId: string | null
+  recipeId: string | null
+  foodPortionId?: string
+  quantity: number
+  unit: FoodUnit
+  normalizedGrams: number | null
+  normalizedMilliliters: number | null
+  precision: FoodPrecision
+  notes: string
+  food?: Food
+  recipe?: Recipe
+  portion?: FoodPortion
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FoodLog {
+  id: string
+  userId: string
+  coupleId: string | null
+  visibility: FoodLogVisibility
+  consumedOn: string
+  consumedAt: string
+  mealType: MealType
+  notes: string
+  items: FoodLogItem[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type MealPlanVisibility = 'private' | 'household'
+export type PlannedMealStatus = 'planned' | 'completed' | 'logged'
+
+export interface PlannedMeal {
+  id: string
+  mealPlanDayId: string
+  mealType: MealType
+  scheduledTime: string | null
+  foodId: string | null
+  recipeId: string | null
+  quantity: number | null
+  unit: FoodUnit | null
+  servings: number | null
+  plannedCalories: number | null
+  plannedProteinG: number | null
+  plannedCarbohydratesG: number | null
+  plannedFatG: number | null
+  plannedFiberG: number | null
+  notes: string
+  status: PlannedMealStatus
+  completedAt: string | null
+  loggedAt: string | null
+  food?: Food
+  recipe?: Recipe
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MealPlanDay {
+  id: string
+  mealPlanId: string
+  planDate: string
+  notes: string
+  meals: PlannedMeal[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MealPlan {
+  id: string
+  userId: string
+  coupleId: string | null
+  name: string
+  startsOn: string
+  endsOn: string
+  visibility: MealPlanVisibility
+  days: MealPlanDay[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type GroceryListStatus = 'current' | 'completed' | 'archived'
+export type GroceryItemStatus = 'pending' | 'purchased'
+export type GroceryItemSource = 'planned' | 'manual' | 'recipe-derived'
+export type GroceryItemCategory = 'produce' | 'protein' | 'dairy' | 'grains' | 'pantry' | 'frozen' | 'beverages' | 'snacks' | 'other'
+export type GroceryPurchaseUnit = 'g' | 'kg' | 'ml' | 'l' | 'unit' | 'dozen'
+
+export interface GroceryListItem {
+  id: string
+  groceryListId: string
+  foodId: string | null
+  name: string
+  nameEs: string
+  nameEn: string
+  category: GroceryItemCategory
+  source: GroceryItemSource
+  calculatedQuantity: number | null
+  calculatedUnit: GroceryPurchaseUnit | null
+  manualQuantity: number | null
+  manualUnit: GroceryPurchaseUnit | null
+  suggestedQuantity: number | null
+  suggestedUnit: GroceryPurchaseUnit | null
+  status: GroceryItemStatus
+  notes: string
+  metadata: Record<string, Json>
+  food?: Food
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GroceryList {
+  id: string
+  coupleId: string
+  createdBy: string | null
+  startsOn: string
+  endsOn: string
+  status: GroceryListStatus
+  items: GroceryListItem[]
+  createdAt: string
+  updatedAt: string
+}
 
 export type LivePhase = 'ready' | 'set' | 'rest' | 'complete'
 

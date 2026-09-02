@@ -36,5 +36,6 @@ async function main() {
     if (result.error) { failed += chunk.length; console.error(`Chunk ${index + 1}-${index + chunk.length} failed: ${result.error.message}`) } else imported += chunk.length
   }
   console.log(`Imported: ${imported}\nUpdated: ${imported}\nSkipped: 0\nFailed: ${failed}`)
+  if (failed > 0) throw new Error(`Exercise import completed with ${failed} failed rows.`)
 }
 void main().catch((error: unknown) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1 })

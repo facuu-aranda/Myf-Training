@@ -2,8 +2,8 @@
 
 > Documento de referencia del proyecto `train-together` / `MyF-Training`.
 >
-> **Fecha de análisis:** 2026-08-28  
-> **Estado:** implementación funcional con modo local de demostración y backend opcional en Supabase.
+> **Fecha de actualización:** 2026-09-02  
+> **Estado:** implementación funcional con backend Supabase, catálogo nutricional ampliado, Food Log, Meal Planner, Grocery List, Insights y modo local de demostración.
 
 ## 1. Resumen ejecutivo
 
@@ -18,7 +18,7 @@ La aplicación está construida como un frontend React servido por Vite. Supabas
 ### Capacidades principales implementadas
 
 - Landing pública y login con username/password.
-- Dos perfiles demo: Facundo y María.
+- Dos perfiles demo: Fabricio y María.
 - Persistencia remota en Supabase con fallback local.
 - Plan nutricional y objetivos diarios editables.
 - Días de entrenamiento y ejercicios planificados.
@@ -39,7 +39,7 @@ La aplicación está construida como un frontend React servido por Vite. Supabas
 
 ## 2. Estado real frente a la visión del producto
 
-La especificación funcional original está en [`initial-prompt.md`](initial-prompt.md). El código actual cubre una parte importante de esa visión, pero no todas las funcionalidades descritas en ella tienen el mismo nivel de implementación.
+La especificación funcional original se conserva como referencia histórica en el contexto del proyecto. El código actual cubre una parte importante de esa visión, pero no todas las funcionalidades descritas en ella tienen el mismo nivel de implementación.
 
 | Área | Estado actual |
 |---|---|
@@ -47,14 +47,14 @@ La especificación funcional original está en [`initial-prompt.md`](initial-pro
 | Supabase/PostgreSQL | Implementado mediante una migración inicial y repositorio de persistencia. |
 | Auth | Supabase Auth en modo remoto; fallback demo local con sesión en `localStorage`. |
 | RLS | Implementado para separar datos propios y datos visibles para la pareja. |
-| Realtime | Implementado para sesiones, series, métricas, PRs y eventos. |
+| Realtime | Implementado para fitness, Food Log, Meal Planner y Grocery List. |
 | Estrategia | Implementada para nutrición, días y ejercicios planificados. |
 | Live Training | Implementado con fases `ready`, `set`, `rest` y `complete`. |
 | Entrenamiento manual | Implementado. |
 | Registro rápido | Implementado. |
 | Progreso y analítica | Implementado con cálculos en cliente. |
 | Pareja/feed | Implementado, con datos compartidos definidos por RLS. |
-| Biblioteca de ejercicios | Implementada con nueve ejercicios demo y script de importación masiva. |
+| Biblioteca de ejercicios | Implementada con nueve ejercicios demo, 1.324 ejercicios remotos verificados y script de importación masiva. |
 | Versionado de estrategia | La tabla existe, pero no está conectada al frontend ni al repositorio. |
 | Wearables | No implementados; pasos, calorías y peso se introducen manualmente. |
 | Registro público/OAuth | No implementados intencionadamente. |
@@ -76,7 +76,7 @@ La especificación funcional original está en [`initial-prompt.md`](initial-pro
 | React Router 6 | Enrutado SPA y protección de rutas. | `react-router-dom` |
 | Supabase JS 2 | Auth, consultas PostgreSQL y Realtime. | `@supabase/supabase-js` |
 | PostgreSQL 15 | Base de datos local configurada para Supabase. | `supabase/config.toml` |
-| Supabase Realtime | Eventos `postgres_changes` sobre tablas fitness. | `src/lib/supabase.ts` |
+| Supabase Realtime | Eventos `postgres_changes` sobre tablas fitness y nutrición. | `src/lib/supabase.ts` |
 | Tailwind CSS 3 | Directivas base/utilidades de CSS. | `tailwind.config.js` |
 | CSS propio | Sistema visual principal y responsive design. | `src/index.css` |
 | Framer Motion | Transiciones, modales, navegación y microanimaciones. | `framer-motion` |
@@ -107,7 +107,6 @@ MyF-Training/
 ├── .gitignore
 ├── README.md
 ├── DOCUMENTACION_TECNICA.md
-├── initial-prompt.md
 ├── package.json
 ├── yarn.lock
 ├── index.html
@@ -169,14 +168,30 @@ MyF-Training/
 │       ├── HistoryPage.tsx
 │       ├── CouplePage.tsx
 │       ├── ExerciseLibraryPage.tsx
-│       └── ProfilePage.tsx
+│       ├── ProfilePage.tsx
+│       ├── FoodLibraryPage.tsx
+│       ├── FoodLogPage.tsx
+│       ├── GroceryPage.tsx
+│       ├── MealPlannerPage.tsx
+│       ├── NutritionInsightsPage.tsx
+│       └── RecipesPage.tsx
 ├── scripts/
 │   ├── seed.ts
 │   ├── seed-exercises.ts
+│   ├── seed-foods.ts
+│   ├── seed-foods-usda.ts
+│   ├── seed-nutrition-demo.ts
 │   └── db-check.ts
 ├── supabase/
 │   ├── config.toml
-│   ├── migrations/20260828000000_initial_schema.sql
+│   ├── migrations/
+│   │   ├── 20260828000000_initial_schema.sql
+│   │   ├── 20260828010000_nutrition_foundation.sql
+│   │   ├── 20260828020000_nutrition_recipes.sql
+│   │   ├── 20260828030000_nutrition_food_log.sql
+│   │   ├── 20260902000000_nutrition_meal_planner.sql
+│   │   ├── 20260902010000_nutrition_grocery.sql
+│   │   └── 20260902020000_nutrition_food_sharing.sql
 │   ├── seed/seed.sql
 │   └── scripts/verify.sql
 └── tests/
@@ -257,6 +272,12 @@ React.StrictMode
 | `/app/couple` | Protegido | `CouplePage` | Resumen de ambos perfiles y feed compartido. |
 | `/app/exercises` | Protegido | `ExerciseLibraryPage` | Búsqueda y consulta de ejercicios. |
 | `/app/profile` | Protegido | `ProfilePage` | Perfil, metas, métricas del día, idioma y logout. |
+| `/app/nutrition/foods` | Protegido | `FoodLibraryPage` | Catálogo global de alimentos. |
+| `/app/nutrition/recipes` | Protegido | `RecipesPage` | Creación y edición de recetas. |
+| `/app/nutrition/log` | Protegido | `FoodLogPage` | Registro diario de alimentos consumidos (Food Log). |
+| `/app/nutrition/planner` | Protegido | `MealPlannerPage` | Planificador semanal de comidas. |
+| `/app/nutrition/grocery` | Protegido | `GroceryPage` | Lista de compras compartida. |
+| `/app/nutrition/insights` | Protegido | `NutritionInsightsPage` | Comparación consumo registrado vs. planificado. |
 
 `AppShell` aporta sidebar de escritorio, topbar, indicador de sincronización, menú lateral móvil y navegación inferior móvil. En pantallas de hasta 820px se oculta el sidebar fijo y se utiliza navegación móvil.
 
@@ -347,7 +368,7 @@ Realtime puede provocar refreshFromRemote() en las pestañas conectadas
 `src/lib/auth.ts` transforma el username a un email técnico:
 
 ```text
-facundo → facundo@train-together.local
+fabricio → fabricio@train-together.local
 maria   → maria@train-together.local
 ```
 
@@ -557,6 +578,39 @@ La visibilidad del otro usuario está soportada por RLS y por la función `is_co
 - Muestra entrenamientos completados, PRs, racha y peso.
 - Cambia el idioma mediante `LanguageSwitcher`.
 - Cierra sesión y navega a `/login`.
+
+### 9.13 Biblioteca de Alimentos — `FoodLibraryPage.tsx`
+
+- Catálogo global de alimentos base, USDA y TACO.
+- Búsqueda y gestión de porciones y favoritos.
+
+### 9.14 Recetas — `RecipesPage.tsx`
+
+- Creación, edición y eliminación de recetas privadas o compartidas (household).
+- Cálculo automático de calorías y macros por porción en base a los ingredientes.
+
+### 9.15 Food Log — `FoodLogPage.tsx`
+
+- Registro diario de consumo con fecha/hora, alimentos, recetas y porciones.
+- Totales diarios y comparación visual con el objetivo.
+- Soporte para registros privados o compartidos (household).
+
+### 9.16 Meal Planner — `MealPlannerPage.tsx`
+
+- Planificación semanal de comidas y recetas.
+- Permite comidas flexibles (solo objetivo calórico).
+- Generación de totales semanales planificados.
+
+### 9.17 Lista de Compras — `GroceryPage.tsx`
+
+- Lista compartida a nivel de `couple` (household).
+- Generación automática basada en `MealPlanner` y consolidación de ingredientes de recetas.
+- Permite agregar artículos manuales y marcar el estado de compra.
+
+### 9.18 Nutrition Insights — `NutritionInsightsPage.tsx`
+
+- Comparación de consumo registrado vs. planificado.
+- Métricas de adherencia diaria y semanal.
 
 ---
 
@@ -879,6 +933,15 @@ Todas las tablas públicas tienen RLS habilitado. La intención general es:
 | `profiles` | Perfil propio o miembro de la misma pareja. | Solo el propio perfil. |
 | `couple_members` | Propio o miembro de la misma pareja. | No hay policy de escritura de usuario. |
 | `nutrition_plans` | Solo propio. | Solo propio. |
+| `food_sources`, `foods`, `food_nutrients`, `food_portions`, `food_aliases` | Catálogo global autenticado. | No hay escritura desde el cliente. |
+| `food_favorites` | Solo propias. | Solo propias. |
+| `recipes` | Propias, household o system según visibilidad. | Solo propias. |
+| `recipe_ingredients` | Según la receta visible. | Solo si la receta pertenece al usuario. |
+| `food_logs` | Propios y household explícitamente compartidos. | Solo propios. |
+| `food_log_items` | Según la visibilidad del Food Log padre. | Solo si el log es propio. |
+| `meal_plans` | Propios y planes household visibles. | Solo propios. |
+| `meal_plan_days`, `planned_meals` | Según el plan visible. | Solo si el plan pertenece al usuario. |
+| `grocery_lists`, `grocery_list_items` | Miembros del household. | Miembros del household. |
 | `exercises` | Cualquier usuario autenticado. | No hay policy de escritura de usuario. |
 | `workout_days` | Solo propio. | Solo propio. |
 | `workout_exercises` | Según pertenencia al día propio. | Solo si el día pertenece al usuario. |
@@ -903,25 +966,20 @@ Todas las tablas públicas tienen RLS habilitado. La intención general es:
 
 ### Tablas publicadas
 
-La migración añade a `supabase_realtime` y configura `replica identity full` para:
+Las migraciones añaden a `supabase_realtime` y configuran `replica identity full` para:
 
-- `workout_sessions`
-- `exercise_sets`
-- `daily_metrics`
-- `personal_records`
-- `activity_events`
+- `workout_sessions`, `exercise_sets`, `daily_metrics`, `personal_records`, `activity_events`;
+- `food_logs`, `food_log_items`;
+- `meal_plans`, `meal_plan_days`, `planned_meals`;
+- `grocery_lists`, `grocery_list_items`.
 
-`supabase/scripts/verify.sql` comprueba esta configuración.
+`supabase/scripts/verify.sql` y `db-check.ts` comprueban esta configuración.
 
 ### Suscripción frontend
 
-`subscribeToFitnessChanges()` crea el canal `fitness-couple-updates` y escucha todos los eventos `postgres_changes` de esas cinco tablas. Ante cualquier evento:
+`subscribeToFitnessChanges()` mantiene el canal `fitness-couple-updates` para las cinco tablas de fitness. `subscribeToNutritionChanges()` usa el canal `nutrition-updates` para Food Log, Meal Planner y Grocery List; las pantallas nutricionales refrescan su propio dominio ante un evento.
 
-1. se actualiza `lastSyncedAt`;
-2. se ejecuta `refreshFromRemote()`;
-3. se reemplaza el estado completo por el resultado de las ocho consultas.
-
-No se implementa un merge granular por fila ni resolución de conflictos. Tampoco se suscriben cambios de perfiles, nutrición, días, planes o catálogo de ejercicios.
+No se implementa un merge granular por fila ni resolución de conflictos. Los cambios de perfiles, objetivos y catálogo se recargan mediante las operaciones específicas que los consumen.
 
 El valor `isRealtimeConnected` representa principalmente que Supabase está configurado. El código actual no expone un callback detallado del estado `SUBSCRIBED`, `CHANNEL_ERROR` o `TIMED_OUT`; por ello el indicador visual no equivale a una comprobación completa de conectividad.
 
@@ -994,7 +1052,7 @@ Usa `SUPABASE_SERVICE_ROLE_KEY` y:
 Requiere contraseñas por variables de entorno:
 
 ```text
-FACUNDO_PASSWORD=<valor seguro>
+FABRICIO_PASSWORD=<valor seguro>
 MARIA_PASSWORD=<valor seguro>
 ```
 
@@ -1046,11 +1104,13 @@ La plantilla es [`.env.example`](.env.example):
 |---|---|---|
 | `VITE_SUPABASE_URL` | Frontend y scripts. | Pública dentro de la aplicación, pero específica del proyecto. |
 | `VITE_SUPABASE_ANON_KEY` | Frontend. | Pública por diseño; RLS debe estar correctamente configurado. |
-| `SUPABASE_SERVICE_ROLE_KEY` | `seed.ts`, `seed-exercises.ts`, `db-check.ts`. | Secreta; nunca exponer al navegador. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Todos los scripts `seed:*` y `db:check`. | Secreta; nunca exponer al navegador. |
 | `SUPABASE_DB_URL` | Declarada en plantilla, no utilizada actualmente por los scripts. | Debe tratarse como secreta si se utiliza posteriormente. |
 | `EXERCISES_DATA_URL` | `seed-exercises.ts`, opcional. | URL configurable, no es secreto. |
-| `FACUNDO_PASSWORD` | `seed.ts`, requerida al crear Facundo. | Secreta. |
+| `FABRICIO_PASSWORD` | `seed.ts`, requerida al crear Fabricio. | Secreta. |
 | `MARIA_PASSWORD` | `seed.ts`, requerida al crear María. | Secreta. |
+| `USDA_DATASETS` | `seed-foods-usda.ts`, opcional; permite seleccionar fuentes USDA concretas. | No es secreto. |
+| `DEMO_SEED_DATE` | `seed-nutrition-demo.ts`, opcional; fija la semana del seed demo. | No es secreto. |
 
 Para el frontend solo deben estar disponibles variables con prefijo `VITE_`. Las variables administrativas deben cargarse en la sesión de terminal que ejecuta los scripts, nunca en el bundle.
 
@@ -1078,12 +1138,12 @@ supabase status
 yarn db:reset
 ```
 
-Después de obtener desde `supabase status` la URL y la clave anónima, se deben cargar en `.env` como `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. Los scripts ejecutados con `tsx` leen `process.env` directamente y no cargan `.env` por sí mismos; para poblar usuarios y datos demo completos hay que exportar explícitamente sus variables en la sesión de terminal. En PowerShell, por ejemplo:
+Después de obtener desde `supabase status` la URL y la clave anónima, se deben cargar en `.env` como `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. Los scripts de este repositorio cargan `.env` mediante `dotenv/config`; las variables administrativas deben existir solo en la sesión segura que ejecuta los seeds. En PowerShell, por ejemplo:
 
 ```powershell
 $env:VITE_SUPABASE_URL = "<url reportada por supabase status>"
 $env:SUPABASE_SERVICE_ROLE_KEY = "<service-role-key>"
-$env:FACUNDO_PASSWORD = "<password segura>"
+$env:FABRICIO_PASSWORD = "<password segura>"
 $env:MARIA_PASSWORD = "<password segura>"
 ```
 
@@ -1092,6 +1152,9 @@ Después, ejecutar:
 ```bash
 yarn seed
 yarn seed:exercises
+yarn seed:foods
+yarn seed:foods:usda
+yarn seed:nutrition:demo
 yarn db:check
 yarn dev
 ```
@@ -1107,12 +1170,15 @@ yarn install
 yarn db:push
 yarn seed
 yarn seed:exercises
+yarn seed:foods
+yarn seed:foods:usda
+yarn seed:nutrition:demo
 yarn db:check
 yarn build
 yarn preview
 ```
 
-Antes de `yarn seed`, `yarn seed:exercises` y `yarn db:check`, exportar en la sesión de terminal `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y, para `seed`, `FACUNDO_PASSWORD` y `MARIA_PASSWORD`, tal como se muestra en el ejemplo de PowerShell anterior. `SUPABASE_SERVICE_ROLE_KEY` solo debe existir en la máquina o job seguro que ejecuta el seed. El hosting del frontend solo necesita las variables `VITE_*`.
+Antes de `yarn seed`, `yarn seed:exercises`, `yarn seed:foods`, `yarn seed:foods:usda`, `yarn seed:nutrition:demo` y `yarn db:check`, exportar en la sesión de terminal `VITE_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`. Para crear las cuentas desde `yarn seed`, también se requieren `FABRICIO_PASSWORD` y `MARIA_PASSWORD`, tal como se muestra en el ejemplo de PowerShell anterior. `SUPABASE_SERVICE_ROLE_KEY` solo debe existir en la máquina o job seguro que ejecuta los scripts. El hosting del frontend solo necesita las variables `VITE_*`.
 
 ---
 
@@ -1328,7 +1394,91 @@ Esta sección describe el comportamiento actual para evitar confundir la documen
 
 ---
 
-## 27. Conclusión
+## 27. Nutrition — foundation (Phase 1/2)
+
+Se agregó la primera base del subsistema nutricional sin mezclarla con `FitnessContext` ni con los datos de entrenamiento existentes.
+
+### Componentes incorporados
+
+- Migraciones versionadas `supabase/migrations/20260828010000_nutrition_foundation.sql`, `supabase/migrations/20260828020000_nutrition_recipes.sql` y `supabase/migrations/20260828030000_nutrition_food_log.sql`, `supabase/migrations/20260902000000_nutrition_meal_planner.sql`, `supabase/migrations/20260902010000_nutrition_grocery.sql` y `supabase/migrations/20260902020000_nutrition_food_sharing.sql`.
+- Tablas `food_sources`, `foods`, `food_nutrients`, `food_portions`, `food_aliases`, `food_favorites`, `recipes`, `recipe_ingredients`, `food_logs`, `food_log_items`, `grocery_lists` y `grocery_list_items`.
+- RLS para catálogo global de lectura autenticada y favoritos privados por usuario.
+- Índices de búsqueda, fuente, porciones y favoritos.
+- Tipos de dominio en `src/types/index.ts` y contrato manual en `src/types/database.ts`.
+- Cálculos puros en `src/lib/nutrition.ts` para cantidades, porciones, comidas y recetas.
+- Repositorio para carga, búsqueda y favoritos en `src/lib/repository.ts`.
+- Hook `src/hooks/useFoodLibrary.ts` y pantalla `/app/nutrition/foods`.
+- Editor de recetas en `/app/nutrition/recipes`, con ingredientes reales y cálculo por porción.
+- Food Log en `/app/nutrition/log`, con fecha/hora, múltiples alimentos y totales diarios.
+- Meal Planner semanal en `/app/nutrition/planner`, con comidas por día, comidas flexibles y macros planificados.
+- Grocery List household en `/app/nutrition/grocery`, con generación por horizonte, artículos manuales y estado de compra.
+- Nutrition Insights en `/app/nutrition/insights`, con comparación planificado vs. registrado y adherencia diaria/semanal.
+- Importers reproducibles `scripts/seed-foods.ts` y `scripts/seed-foods-usda.ts`, con comandos `yarn seed:foods` y `yarn seed:foods:usda`.
+
+### Fuente inicial
+
+Se inspeccionó la estructura real de `brolesi/taco`. La composición procesada contiene 597 alimentos en CSV y sus valores están expresados por 100 g de parte comestible. El importer conserva los campos principales, micronutrientes disponibles y la trazabilidad de la fuente. Cada alimento recibe inicialmente una porción explícita de 100 g.
+
+Las medidas POF se mantienen separadas porque sus códigos de alimento no tienen una equivalencia automática segura con los IDs TACO. No se realiza matching difuso ni se inventan equivalencias; las medidas caseras se incorporarán mediante un mapeo validado.
+
+El repositorio TACO declara licencia MIT para código y repositorio, pero indica que los datos pertenecen a sus fuentes primarias. La aplicación guarda `source`, `source_url`, `license`, `attribution` e `imported_at` para conservar trazabilidad.
+
+El campo `name` conserva el nombre original en portugués; `name_es` y `name_en` se completan durante la importación y quedan persistidos en Supabase. Las categorías y preparaciones localizadas se guardan en `metadata`. No se consulta ningún servicio de traducción durante el runtime; si una traducción requiere corrección editorial, se actualiza en el importer o mediante un catálogo curado.
+
+Se incorporaron además USDA Foundation Foods (363 registros utilizables; 32 entradas `null` del archivo oficial) y SR Legacy (7.793 registros). El comando `yarn seed:foods:usda` los importa por fuente independiente, usa el nombre inglés original, genera el nombre español durante el seed e importa las porciones disponibles. El dump USDA Branded no se importa masivamente por su volumen y porque está orientado a productos comerciales.
+
+### Ejecución
+
+Después de aplicar la migración en Supabase SQL Editor o mediante `supabase db push`:
+
+```bash
+yarn seed:foods
+yarn db:check
+```
+
+El runtime consulta Supabase; no consulta GitHub para cada búsqueda. La biblioteca utiliza consultas acotadas y el repositorio pagina los catálogos grandes.
+
+### Recipes (Phase 3)
+
+La migración `20260828020000_nutrition_recipes.sql` agrega `recipes` y `recipe_ingredients`. Las recetas pueden ser privadas o compartidas con el household existente mediante `couple_id`; los ingredientes siempre referencian alimentos reales y las calorías/macros se calculan desde sus nutrientes y servings.
+
+La pantalla `/app/nutrition/recipes` permite crear, editar y eliminar recetas, buscar alimentos para agregar ingredientes y previsualizar la nutrición por porción. La migración debe aplicarse después de `20260828010000_nutrition_foundation.sql`.
+
+### Food Log (Phase 4 foundation)
+
+La migración `20260828030000_nutrition_food_log.sql` agrega `food_logs` y `food_log_items`. La ejecución conserva fecha y hora real, tipo de comida, cantidades, unidad, porción, precisión (`exact`, `estimated` o `portion`) y una referencia a alimento o receta. Los registros son privados por usuario y están preparados para Realtime.
+
+La pantalla `/app/nutrition/log` permite cambiar el día, registrar múltiples alimentos o recetas por comida, calcular el total diario contra el objetivo existente, elegir visibilidad `private`/`household` y eliminar registros propios. Para recetas, la cantidad se interpreta como porciones y se recalcula desde sus ingredientes. Los registros existentes permanecen privados por defecto.
+
+La migración `20260902020000_nutrition_food_sharing.sql` agrega el opt-in de household y actualiza las políticas RLS: solo los registros marcados explícitamente como `household` pueden ser leídos por el otro miembro de la pareja.
+
+### Meal Planner (Phase 5 foundation)
+
+La migración `20260902000000_nutrition_meal_planner.sql` agrega `meal_plans`, `meal_plan_days` y `planned_meals`, diferenciando lo planificado de lo registrado. Incluye comidas flexibles con calorías objetivo, estados `planned`/`completed`/`logged`, RLS del usuario/household y Realtime.
+
+La pantalla `/app/nutrition/planner` permite navegar por semanas, agregar alimentos, recetas o comidas flexibles a cada día, definir horario, tipo de comida y cantidad, editar, duplicar, mover o eliminar comidas, y ver el total semanal planificado. La comparación contra Food Log se visualiza en `/app/nutrition/insights`.
+
+### Grocery List (Phase 6 foundation)
+
+La migración `20260902010000_nutrition_grocery.sql` agrega `grocery_lists` y `grocery_list_items`. Las listas pertenecen al household mediante `couple_id`, incluyen cantidades calculadas, sugerencia de compra, ajustes manuales, fuente (`planned`, `recipe-derived` o `manual`) y estado `pending`/`purchased`.
+
+La pantalla `/app/nutrition/grocery` permite generar listas para 7, 14 o 28 días, sumar alimentos planificados e ingredientes de recetas, redondear cantidades de compra, agrupar por categorías, agregar artículos del hogar, modificar cantidades, marcar compras, consultar historial y regenerar sin borrar artículos manuales.
+
+### Couple Nutrition (Phase 7 foundation)
+
+El componente `src/components/CoupleNutritionPanel.tsx` agrega un resumen semanal por perfil dentro de `/app/couple`. Para el usuario autenticado utiliza sus registros propios; para el otro perfil solo consulta logs con visibilidad `household`. Los planes privados y los consumos privados no se exponen.
+
+### Limitaciones actuales
+
+- La generación usa los planes propios y los planes household explícitamente compartidos; el resumen de pareja no transforma datos privados en datos compartidos automáticamente.
+
+- El catálogo inicial usa la composición TACO y porciones de 100 g; las equivalencias POF requieren mapeo explícito.
+- El detalle muestra los datos nutricionales disponibles; los valores ausentes de la fuente se conservan como `null` y no se interpretan como cero.
+- Open Food Facts, LATINFOODS y ARGENFOODS quedan como providers futuros sujetos a revisión de licencia; USDA Foundation y SR Legacy ya están importados.
+
+---
+
+## 28. Conclusión
 
 El proyecto ya constituye una aplicación funcional de entrenamiento para dos personas, no únicamente un mockup visual: tiene navegación protegida, estado de dominio, persistencia Supabase, migración PostgreSQL, RLS, triggers, Realtime, seeds, analítica, tests y build de producción.
 

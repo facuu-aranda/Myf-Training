@@ -22,8 +22,8 @@ interface ShareCardModalProps {
   fileName?: string
 }
 
-const WIDTH = 1600
-const HEIGHT = 900
+const WIDTH = 1080
+const HEIGHT = 1350
 
 function loadImage(src: string) {
   return new Promise<HTMLImageElement | null>((resolve) => {
@@ -107,14 +107,14 @@ export function ShareCardModal({ open, onClose, title, subtitle, tag, stats, pro
         context.fillStyle = glow; context.fillRect(0, 0, WIDTH, HEIGHT)
       }
       setHasBase(Boolean(base))
-      context.fillStyle = 'rgba(255,255,255,.07)'; context.fillRect(86, 85, 6, 45)
-      context.fillStyle = '#c3a2ff'; context.font = '500 22px "DM Mono", monospace'; context.letterSpacing = '4px'; context.fillText(tag.toUpperCase(), 116, 112)
-      context.fillStyle = '#ffffff'; context.font = '600 76px "Space Grotesk", sans-serif'; context.letterSpacing = '-2px'; context.fillText(title, 86, 220)
-      context.fillStyle = 'rgba(239,231,249,.72)'; context.font = '400 25px Inter, sans-serif'; context.letterSpacing = '0px'; context.fillText(subtitle, 90, 267)
-      const cardX = 86; const cardY = 350; const cardWidth = WIDTH - 172; const cardHeight = 315
+      context.fillStyle = 'rgba(255,255,255,.07)'; context.fillRect(64, 90, 6, 45)
+      context.fillStyle = '#c3a2ff'; context.font = '500 22px "DM Mono", monospace'; context.letterSpacing = '4px'; context.fillText(tag.toUpperCase(), 94, 117)
+      context.fillStyle = '#ffffff'; context.font = '600 76px "Space Grotesk", sans-serif'; context.letterSpacing = '-2px'; context.fillText(title, 64, 255)
+      context.fillStyle = 'rgba(239,231,249,.72)'; context.font = '400 25px Inter, sans-serif'; context.letterSpacing = '0px'; context.fillText(subtitle, 68, 305)
+      const cardX = 64; const cardY = 425; const cardWidth = WIDTH - 128; const cardHeight = 530
       roundedRect(context, cardX, cardY, cardWidth, cardHeight, 28); context.fillStyle = 'rgba(10, 7, 19, .64)'; context.fill(); context.strokeStyle = 'rgba(202, 164, 255, .28)'; context.lineWidth = 2; context.stroke()
       const statWidth = (cardWidth - 64) / Math.max(stats.length, 1)
-      stats.forEach((stat, index) => { const x = cardX + 32 + statWidth * index; if (index > 0) { context.fillStyle = 'rgba(255,255,255,.1)'; context.fillRect(x - 1, cardY + 42, 2, cardHeight - 84) } context.fillStyle = stat.accent ?? '#bd9aff'; context.font = '600 43px "Space Grotesk", sans-serif'; context.fillText(stat.value, x + 20, cardY + 135); context.fillStyle = 'rgba(231,222,242,.68)'; context.font = '400 17px Inter, sans-serif'; context.fillText(stat.label.toUpperCase(), x + 20, cardY + 177) })
+      stats.forEach((stat, index) => { const x = cardX + 32 + statWidth * index; if (index > 0) { context.fillStyle = 'rgba(255,255,255,.1)'; context.fillRect(x - 1, cardY + 42, 2, cardHeight - 84) } context.fillStyle = stat.accent ?? '#bd9aff'; context.font = '600 43px "Space Grotesk", sans-serif'; context.fillText(stat.value, x + 20, cardY + 205); context.fillStyle = 'rgba(231,222,242,.68)'; context.font = '400 17px Inter, sans-serif'; context.fillText(stat.label.toUpperCase(), x + 20, cardY + 250) })
       profiles.slice(0, 2).forEach((profile, index) => { drawAvatar(context, profile, avatarImages[index], WIDTH - 215 - index * 105, 78, 42, index === 0 ? '#7651cc' : '#c34fbc') })
       context.fillStyle = 'rgba(255,255,255,.45)'; context.font = '500 17px "DM Mono", monospace'; context.fillText('TRAIN TOGETHER  /  2026', 90, HEIGHT - 62)
       context.fillStyle = '#c3a2ff'; context.font = '500 17px "DM Mono", monospace'; context.textAlign = 'right'; context.fillText('GROW TOGETHER', WIDTH - 90, HEIGHT - 62); context.textAlign = 'left'
@@ -126,5 +126,5 @@ export function ShareCardModal({ open, onClose, title, subtitle, tag, stats, pro
 
   const download = () => { const canvas = canvasRef.current; if (!canvas) return; try { const link = document.createElement('a'); link.download = fileName; link.href = canvas.toDataURL('image/png'); link.click() } catch { return } }
   const share = async () => { const canvas = canvasRef.current; if (!canvas || !supportsNativeShare) return; const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png')); if (!blob) return; const file = new File([blob], fileName, { type: 'image/png' }); if (!navigator.canShare?.({ files: [file] })) return; try { await navigator.share({ title, text: subtitle, files: [file] }) } catch { return } }
-  return <Modal open={open} onClose={onClose} title={t('share.title')} size="lg"><div className="share-modal"><div className="share-preview"><canvas ref={canvasRef} aria-label={t('share.generated')} />{isDrawing && <span className="share-loading"><Sparkles size={16} />{t('common.loading')}</span>}</div><div className="share-controls"><StatusPill tone={hasBase ? 'green' : 'violet'} dot>{hasBase ? t('share.generated') : t('share.baseHint')}</StatusPill><p>{t('share.subtitle')}</p><div className="share-control-actions"><NeonButton size="sm" onClick={download} disabled={isDrawing}><Download size={14} />{t('share.download')}</NeonButton>{supportsNativeShare && <NeonButton variant="secondary" size="sm" onClick={() => { void share() }} disabled={isDrawing}><Share2 size={14} />{t('share.native')}</NeonButton>}</div><span className="share-format"><ImageIcon size={13} /> PNG · 1600 × 900</span></div></div></Modal>
+  return <Modal open={open} onClose={onClose} title={t('share.title')} size="lg"><div className="share-modal"><div className="share-preview"><canvas ref={canvasRef} aria-label={t('share.generated')} />{isDrawing && <span className="share-loading"><Sparkles size={16} />{t('common.loading')}</span>}</div><div className="share-controls"><StatusPill tone={hasBase ? 'green' : 'violet'} dot>{hasBase ? t('share.generated') : t('share.baseHint')}</StatusPill><p>{t('share.subtitle')}</p><div className="share-control-actions"><NeonButton size="sm" onClick={download} disabled={isDrawing}><Download size={14} />{t('share.download')}</NeonButton>{supportsNativeShare && <NeonButton variant="secondary" size="sm" onClick={() => { void share() }} disabled={isDrawing}><Share2 size={14} />{t('share.native')}</NeonButton>}</div><span className="share-format"><ImageIcon size={13} /> PNG · 1080 × 1350 · Instagram feed</span></div></div></Modal>
 }

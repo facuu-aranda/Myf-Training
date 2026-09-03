@@ -3,7 +3,7 @@
 > Documento de referencia del proyecto `train-together` / `MyF-Training`.
 >
 > **Fecha de actualización:** 2026-09-03
-> **Estado:** implementación funcional en código con backend Supabase, catálogo nutricional ampliado, Food Log, Meal Planner, Grocery List, Insights y modo local de demostración; el proyecto remoto requiere aplicar la transición final a `household_id` y el fix RLS de Google.
+> **Estado:** implementación funcional con backend Supabase, catálogo nutricional ampliado, Food Log, Meal Planner, Grocery List, Insights, Social/Household, Google OAuth y modo local de demostración; validado contra el proyecto remoto el 2026-09-03.
 
 ## 1. Resumen ejecutivo
 
@@ -47,10 +47,10 @@ La especificación funcional original se conserva como referencia histórica en 
 | Área | Estado actual |
 |---|---|
 | Frontend y navegación | Implementado con React Router y rutas lazy-loaded. |
-| Supabase/PostgreSQL | Implementado mediante una migración inicial y repositorio de persistencia. |
+| Supabase/PostgreSQL | Implementado mediante migraciones versionadas, RLS, triggers, Realtime y repositorio de persistencia; validado remotamente. |
 | Auth | Supabase Auth remoto con password y Google OAuth; fallback demo local con sesión en `localStorage`. Google requiere configuración del provider y URLs en Supabase/Google Cloud. |
-| RLS | Implementado para datos propios, household y perfiles públicos; la migración correctiva debe estar aplicada en el remoto. |
-| Realtime | Implementado para fitness, Food Log, Meal Planner, Grocery List y tablas social/household después de la migración final. |
+| RLS | Implementado y validado para datos propios, household y perfiles públicos mediante helpers no recursivos. |
+| Realtime | Implementado para fitness, Food Log, Meal Planner, Grocery List y tablas social/household. |
 | Estrategia | Implementada para nutrición, días y ejercicios planificados. |
 | Live Training | Implementado con fases `ready`, `set`, `rest` y `complete`. |
 | Entrenamiento manual | Implementado. |
@@ -60,16 +60,16 @@ La especificación funcional original se conserva como referencia histórica en 
 | Biblioteca de ejercicios | Implementada con nueve ejercicios demo, 1.324 ejercicios remotos verificados y script de importación masiva. |
 | Versionado de estrategia | La tabla existe, pero no está conectada al frontend ni al repositorio. |
 | Wearables | No implementados; pasos, calorías y peso se introducen manualmente. |
-| Registro público/OAuth | Google OAuth está implementado en frontend y trigger; falta configurar/verificar provider, signup y redirect en el entorno remoto. |
+| Registro público/OAuth | Google OAuth está implementado en frontend y trigger; provider, signup y redirect se configuran fuera del repositorio. |
 | Recuperación/verificación de email | No implementadas, de acuerdo con el alcance original. |
 | Backend custom/API propia | No existe; Supabase es el backend BaaS. |
 | CI/CD y despliegue | No hay configuración de pipeline o proveedor de hosting en el repositorio. |
 
 ### Verificación remota del 2026-09-03
 
-El proyecto remoto tiene aplicadas las migraciones de identidad social (`households`, `household_members`, perfiles públicos y fixes de trigger), pero todavía no expone `household_id` en `recipes`, `food_logs`, `meal_plans` ni `grocery_lists`. Por lo tanto, está pendiente aplicar `20260902080000_migrate_nutrition_to_households.sql`.
+El proyecto remoto tiene aplicadas las migraciones de identidad social, la transición de Nutrition a `household_id`, la corrección RLS de Google y la publicación Realtime social/household.
 
-La consulta anónima a `profiles` devuelve `42P17: infinite recursion detected in policy for relation "household_members"`. Está pendiente aplicar `20260903000000_fix_household_rls_google_login.sql`; hasta entonces Google puede autenticar en el proveedor, pero la aplicación no puede resolver el perfil de forma fiable.
+`yarn db:check` terminó correctamente: 5 usuarios Auth, 5 perfiles, 3 households, 4 miembros activos, 8.753 alimentos traducidos, 1.324 ejercicios y todas las tablas requeridas en Realtime. La consulta anónima a `profiles` ya no devuelve recursión RLS.
 
 ---
 
@@ -85,7 +85,7 @@ La consulta anónima a `profiles` devuelve `42P17: infinite recursion detected i
 | React Router 6 | Enrutado SPA y protección de rutas. | `react-router-dom` |
 | Supabase JS 2 | Auth, consultas PostgreSQL y Realtime. | `@supabase/supabase-js` |
 | PostgreSQL 15 | Base de datos local configurada para Supabase. | `supabase/config.toml` |
-| Supabase Realtime | Eventos `postgres_changes` sobre tablas fitness y nutrición. | `src/lib/supabase.ts` |
+| Supabase Realtime | Eventos `postgres_changes` sobre tablas fitness, nutrición y social/household. | `src/lib/supabase.ts` |
 | Tailwind CSS 3 | Directivas base/utilidades de CSS. | `tailwind.config.js` |
 | CSS propio | Sistema visual principal y responsive design. | `src/index.css` |
 | Framer Motion | Transiciones, modales, navegación y microanimaciones. | `framer-motion` |
@@ -115,6 +115,7 @@ MyF-Training/
 ├── .env.example
 ├── .gitignore
 ├── README.md
+├── vercel.json
 ├── docs/
 │   ├── DOCUMENTACION_TECNICA.md
 │   ├── TRAIN_TOGETHER_IMPLEMENTATION_PLAN_REFINED.md
@@ -319,7 +320,7 @@ El cliente usa OAuth PKCE con `detectSessionInUrl: true`. El redirect de aplicac
 | `/app/nutrition/grocery` | Protegido | `GroceryPage` | Lista de compras compartida. |
 | `/app/nutrition/insights` | Protegido | `NutritionInsightsPage` | Comparación consumo registrado vs. planificado. |
 
-`AppShell` aporta sidebar de escritorio, topbar, indicador de sincronización, menú lateral móvil y navegación inferior móvil. En pantallas de hasta 820px se oculta el sidebar fijo y se utiliza navegación móvil.
+`AppShell` aporta sidebar de escritorio, topbar, indicador de sincronización, menú lateral móvil y navegación inferior móvil. En pantallas de hasta 820px se oculta el sidebar fijo y se utiliza navegación móvil. El topbar móvil queda sticky, se oculta al desplazarse hacia abajo y reaparece al desplazarse hacia arriba.
 
 ---
 
@@ -492,6 +493,7 @@ Permite al usuario autenticado:
 
 - editar calorías y macros;
 - editar fibra y notas nutricionales;
+- mostrar objetivos iniciales editables aunque todavía no exista un `nutrition_plan` remoto;
 - actualizar objetivo de calorías del perfil;
 - crear, renombrar, eliminar y cambiar el día de un plan;
 - reordenar días mediante drag and drop HTML5;
@@ -500,7 +502,7 @@ Permite al usuario autenticado:
 - quitar ejercicios;
 - abrir detalle del ejercicio.
 
-La implementación actual permite arrastrar **días**, no arrastrar individualmente los ejercicios dentro de la lista. Los botones y formularios escriben mediante `FitnessContext`.
+La implementación actual permite arrastrar **días**, no arrastrar individualmente los ejercicios dentro de la lista. Los botones y formularios escriben mediante `FitnessContext`. Si el usuario nuevo aún no tiene plan nutricional ni días, se muestran objetivos iniciales y un estado vacío accionable en lugar de dejar la pantalla en blanco.
 
 ### 9.5 Live Training — `LiveTrainingPage.tsx`
 
@@ -1081,7 +1083,7 @@ Todas las tablas públicas tienen RLS habilitado. La intención general es:
 | `exercises` | Cualquier usuario autenticado. | No hay policy de escritura de usuario. |
 | `workout_days` | Solo propio. | Solo propio. |
 | `workout_exercises` | Según pertenencia al día propio. | Solo si el día pertenece al usuario. |
-| `workout_sessions`, `exercise_sets`, `daily_metrics`, `personal_records`, `activity_events` | Propio o miembro del household mediante `is_same_household_user` después de la migración correctiva; el remoto actual aún usa legacy. | Solo propias. |
+| `workout_sessions`, `exercise_sets`, `daily_metrics`, `personal_records`, `activity_events` | Propio o miembro del household mediante `is_same_household_user`. | Solo propias. |
 | `strategy_versions` | Solo propias. | Solo propias. |
 
 ### Credenciales y configuración
@@ -1104,7 +1106,7 @@ Las migraciones añaden a `supabase_realtime` y configuran `replica identity ful
 - `food_logs`, `food_log_items`;
 - `meal_plans`, `meal_plan_days`, `planned_meals`;
 - `grocery_lists`, `grocery_list_items`;
-- `households`, `household_members`, `household_invitations`, `profile_follows` tras aplicar la migración correctiva.
+- `households`, `household_members`, `household_invitations`, `profile_follows`.
 
 `supabase/scripts/verify.sql` y `db-check.ts` comprueban esta configuración.
 
@@ -1320,6 +1322,12 @@ yarn preview
 
 Antes de `yarn seed`, `yarn seed:exercises`, `yarn seed:foods`, `yarn seed:foods:usda`, `yarn seed:nutrition:demo` y `yarn db:check`, exportar en la sesión de terminal `VITE_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`. Para crear las cuentas desde `yarn seed`, también se requieren `FABRICIO_PASSWORD` y `MARIA_PASSWORD`, tal como se muestra en el ejemplo de PowerShell anterior. `SUPABASE_SERVICE_ROLE_KEY` solo debe existir en la máquina o job seguro que ejecuta los scripts. El hosting del frontend solo necesita las variables `VITE_*`.
 
+### 19.4 Despliegue Vercel
+
+El proyecto usa Vite con salida `dist`. Vercel debe ejecutar `yarn build` y publicar `dist`. El archivo `vercel.json` configura un rewrite SPA hacia `/index.html`, necesario para que rutas como `/app/onboarding` no devuelvan 404 después del callback OAuth.
+
+En Vercel deben estar configuradas en el entorno `Production` las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. La URL de producción debe estar registrada en Supabase Auth como `Site URL`/redirect permitido; el callback de Google continúa siendo el callback del proyecto Supabase, no una ruta de Vercel.
+
 ---
 
 ## 20. Internacionalización
@@ -1433,7 +1441,7 @@ Cubre 18 tests unitarios relacionados con:
 - formato del temporizador;
 - clave de fecha local.
 
-Todavía no existen tests de componentes, integración real con Supabase, RLS, Realtime, navegación E2E ni accesibilidad automatizada; el `db-check` remoto sirve como smoke test de esquema, columnas y una ruta anónima de RLS.
+Todavía no existen tests de componentes, navegación E2E ni accesibilidad automatizada. La integración remota dispone de `db-check` como smoke test de esquema, columnas, una ruta anónima de RLS y publicación Realtime.
 
 ### Verificación ejecutada durante la documentación
 
@@ -1443,7 +1451,7 @@ Todavía no existen tests de componentes, integración real con Supabase, RLS, R
 | `yarn typecheck` | Correcto. |
 | `yarn test` | Correcto: 1 archivo y 18 tests aprobados; en Windows con límite de memoria se puede usar single fork. |
 | `yarn build` | Correcto: `tsc -b` y build de Vite completados. |
-| `yarn db:check` | Bloqueado por el remoto actual: `recipes.household_id` no existe; requiere aplicar la migración de transición y el fix RLS documentados arriba. |
+| `yarn db:check` | Correcto: valida esquema final, RLS anónimo, traducciones, datos mínimos y Realtime remoto. |
 
 El build usa lazy chunks para páginas y manual chunks para React, Motion, Charts, Supabase, iconos e i18n.
 
@@ -1487,8 +1495,8 @@ Esta sección describe el comportamiento actual para evitar confundir la documen
 3. Generar tipos oficiales con Supabase y utilizar `SupabaseClient<Database>`.
 4. Sustituir la persistencia fire-and-forget por operaciones con estado de error, reintento y cola offline si se requiere robustez.
 5. Desactivar el modo demo/local en builds de producción o marcarlo explícitamente como no seguro.
-6. Aplicar y verificar la migración final a `household_id` y la corrección de RLS para evitar recursión en `household_members`.
-7. Configurar Google OAuth en Supabase/Google Cloud y validar el callback PKCE con una cuenta nueva.
+6. Mantener la migración final a `household_id` y las helpers RLS cubiertas por smoke tests remotos.
+7. Añadir una prueba E2E de Google OAuth y validación del callback PKCE en cada deployment.
 8. Diseñar la capa de subscriptions/entitlements antes de incorporar pagos reales.
 
 ### Prioridad media
@@ -1546,11 +1554,11 @@ Esta sección describe el comportamiento actual para evitar confundir la documen
 
 ## 27. Nutrition, Social y Household — estado implementado
 
-El subsistema nutricional y la capa inicial social/household se agregaron sin mezclar su estado específico con `FitnessContext`. Esta sección describe el estado del código y del esquema al 2026-09-03, incluyendo pendientes de aplicación en el proyecto remoto.
+El subsistema nutricional y la capa inicial social/household se agregaron sin mezclar su estado específico con `FitnessContext`. Esta sección describe el estado validado del código y del esquema remoto al 2026-09-03.
 
 ### Componentes incorporados
 
-- Migraciones versionadas de Nutrition y social: foundation, recipes, Food Log, Meal Planner, Grocery, sharing, mejoras de búsqueda, `social_household_foundation`, migración final a `household_id`, fixes de trigger Google/username, policy de salida y corrección RLS en `supabase/migrations/`; la migración crítica pendiente de aplicar en el remoto es `20260902080000_migrate_nutrition_to_households.sql` seguida de `20260903000000_fix_household_rls_google_login.sql`.
+- Migraciones versionadas de Nutrition y social: foundation, recipes, Food Log, Meal Planner, Grocery, sharing, mejoras de búsqueda, `social_household_foundation`, migración final a `household_id`, fixes de trigger Google/username, policy de salida y corrección RLS en `supabase/migrations/`; las migraciones críticas `20260902080000_migrate_nutrition_to_households.sql` y `20260903000000_fix_household_rls_google_login.sql` ya están aplicadas y validadas en el remoto.
 - Tablas `food_sources`, `foods`, `food_nutrients`, `food_portions`, `food_aliases`, `food_favorites`, `recipes`, `recipe_ingredients`, `food_logs`, `food_log_items`, `meal_plans`, `meal_plan_days`, `planned_meals`, `grocery_lists`, `grocery_list_items`, `households`, `household_members`, `household_invitations` y `profile_follows`.
 - RLS para catálogo global de lectura autenticada y favoritos privados por usuario.
 - Índices de búsqueda, fuente, porciones y favoritos.
@@ -1591,7 +1599,7 @@ yarn db:check
 
 El runtime consulta Supabase; no consulta GitHub para cada búsqueda. La biblioteca utiliza consultas acotadas y el repositorio pagina los catálogos grandes.
 
-El seed nutricional demo usa IDs deterministas y solo upsertea sus propias filas. En el entorno remoto validado dejó 3 recetas, 2 planes semanales, 56 comidas planificadas, 32 Food Logs, 12 favoritos y 8 artículos de Grocery para los dos usuarios demo.
+El seed nutricional demo usa IDs deterministas y solo upsertea sus propias filas. En el entorno remoto validado dejó 3 recetas, 2 planes semanales, 56 comidas planificadas, 40 Food Logs, 20 favoritos y 8 artículos de Grocery para los dos usuarios demo.
 
 ### Recipes (Phase 3)
 
@@ -1645,7 +1653,7 @@ La aplicación ha migrado su estructura social inicial (`couples`) hacia un mode
 - Se implementó la tabla `households` (migrada desde `couples`), con manejo estructurado de miembros (`household_members`) y capacidad explícita mediante `max_members`; el household demo actual es tipo Duo de dos personas.
 - Se implementó el sistema de `household_invitations` que incluye estados como `pending`, `accepted` y `declined`.
 - La ruta legacy de pareja fue reemplazada por `HouseholdPage`, soportando múltiples usuarios y un panel superior de administración de invitaciones; `CouplePage.tsx` ya no forma parte del árbol enroutado.
-- Todas las tablas del sistema de nutrición (`food_logs`, `grocery_lists`, `meal_plans`, `recipes`) se actualizaron para utilizar `household_id` en lugar de `couple_id`. Sus políticas de seguridad (RLS) ahora validan el acceso usando `household_members` una vez aplicada la migración de transición pendiente.
+- Todas las tablas del sistema de nutrición (`food_logs`, `grocery_lists`, `meal_plans`, `recipes`) se actualizaron para utilizar `household_id` en lugar de `couple_id`. Sus políticas de seguridad (RLS) validan el acceso mediante helpers seguros sobre `household_members`, sin recursión.
 
 ### 28.3 Monetización y pasarela de pago
 
@@ -1656,12 +1664,12 @@ La pasarela de pago todavía no está implementada, y tampoco existe aún la fou
 | Área | Estado real al 2026-09-03 | Evaluación |
 |---|---|---|
 | Training existente | Login password, dashboard, Strategy, Live, Manual, Quick Log, Progress e History | Implementado; conserva deuda de persistencia optimista y tests E2E. |
-| Nutrition | Food Library, 8.753 alimentos, Recipes, Food Log, Planner, Grocery e Insights | Implementado en código; el remoto todavía necesita aplicar la migración a `household_id`. |
+| Nutrition | Food Library, 8.753 alimentos, Recipes, Food Log, Planner, Grocery e Insights | Implementado en código y validado en el remoto con `household_id`. |
 | Identidad pública | Handle, código TT, búsqueda y perfil público | Parcial; faltan relationship states y gestión completa de Follow. |
-| Household | Tablas, invitaciones, aceptación/rechazo y UI | Parcial; el remoto tiene una policy recursiva que debe corregirse y la migración nutricional está pendiente. |
+| Household | Tablas, invitaciones, aceptación/rechazo y UI | Implementado y validado; no hay invitaciones ni follows pendientes en los datos actuales. |
 | Shared Progress | Panel de household y nutrición household opt-in | Parcial; no existe todavía selección granular completa por indicador ni enforcement de `progress_visibility` para followers. |
 | Google OAuth | Botón, PKCE, callback de sesión y trigger de perfil | Código corregido; requiere provider, signup y URLs configurados en Supabase/Google Cloud. |
-| Realtime | Fitness, Nutrition y canal Social/Household | Parcial; el canal social y su publicación dependen de la migración RLS correctiva; falta estado detallado de conexión y refresh selectivo. |
+| Realtime | Fitness, Nutrition y canal Social/Household | Implementado y publicado; falta estado detallado de conexión y refresh selectivo. |
 | FREE/PLUS/DUO | Copy/precios iniciales en Landing | No implementado como autorización; faltan configuración central, entitlements y gates. |
 | Pasarela de pago | Ninguna | Pendiente explícito; no hay checkout, webhook ni portal. |
 | Tests | 18 tests unitarios de dominio y smoke `db:check` | Parcial; faltan RLS, OAuth, Realtime, E2E, componentes y accesibilidad. |

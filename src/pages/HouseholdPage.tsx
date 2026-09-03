@@ -80,12 +80,12 @@ export function HouseholdPage() {
       {invitations.map((inv) => (
         <GlassCard key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px' }}>
           <div>
-            <strong style={{ display: 'block', color: '#e5dafa' }}>{inv.household?.name || 'Household'}</strong>
-            <span style={{ color: '#a998bc', fontSize: '13px' }}>{inv.inviter?.displayName} invited you</span>
+            <strong style={{ display: 'block', color: '#e5dafa' }}>{inv.household?.name || t('household.household')}</strong>
+            <span style={{ color: '#a998bc', fontSize: '13px' }}>{t('household.invitedYou', { name: inv.inviter?.displayName ?? '' })}</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <NeonButton variant="secondary" size="sm" onClick={() => handleDecline(inv.id)}><X size={14} /></NeonButton>
-            <NeonButton size="sm" onClick={() => handleAccept(inv.id, inv.householdId)}><Check size={14} /> Accept</NeonButton>
+            <NeonButton variant="secondary" size="sm" onClick={() => handleDecline(inv.id)}><X size={14} />{t('household.decline')}</NeonButton>
+            <NeonButton size="sm" onClick={() => handleAccept(inv.id, inv.householdId)}><Check size={14} />{t('household.accept')}</NeonButton>
           </div>
         </GlassCard>
       ))}

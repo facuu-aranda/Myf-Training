@@ -41,9 +41,9 @@ export function PublicProfilePage() {
     if (!profile) return
     try {
       await sendFollowRequest(profile.id)
-      setToast('Follow request sent')
+      setToast(t('people.followSent'))
     } catch {
-      setToast('Could not send follow request')
+      setToast(t('people.followError'))
     }
   }
 
@@ -51,9 +51,9 @@ export function PublicProfilePage() {
     if (!profile || !household) return
     try {
       await inviteToHousehold(household.household.id, profile.id)
-      setToast('Invitation sent')
+      setToast(t('people.invitationSent'))
     } catch {
-      setToast('Could not send invitation')
+      setToast(t('people.invitationError'))
     }
   }
 
@@ -71,7 +71,7 @@ export function PublicProfilePage() {
     return (
       <PageMotion>
         <div className="empty-state">
-          <h2>Profile not found</h2>
+          <h2>{t('people.profileNotFound')}</h2>
           <NeonButton onClick={() => navigate('/app/people')}>{t('common.back')}</NeonButton>
         </div>
       </PageMotion>
@@ -98,12 +98,12 @@ export function PublicProfilePage() {
           <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
             <NeonButton onClick={handleFollow}>
               <UserPlus size={16} />
-              Follow
+              {t('people.follow')}
             </NeonButton>
             {canInvite && (
               <NeonButton variant="secondary" onClick={handleInvite}>
                 <Home size={16} />
-                Invite to Household
+                {t('people.inviteToHousehold')}
               </NeonButton>
             )}
           </div>

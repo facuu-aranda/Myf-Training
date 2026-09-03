@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Search, Users } from 'lucide-react'
 import { PageMotion } from '../components/PageMotion'
@@ -10,6 +11,7 @@ import { createHousehold, getMyHousehold } from '../lib/household'
 
 export function OnboardingPage() {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const { updateProfile } = useFitness()
   const navigate = useNavigate()
 
@@ -43,9 +45,9 @@ export function OnboardingPage() {
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div style={{ textAlign: 'center', marginBottom: 30 }}>
-                <span className="eyebrow-label">Step 1 of 2</span>
-                <h1>Your Public Identity</h1>
-                <p style={{ color: '#b2a5c4', marginTop: 10 }}>This is how others will find you. We've generated one for you, but you can change it.</p>
+                <span className="eyebrow-label">{t('onboarding.step', { current: 1 })}</span>
+                <h1>{t('onboarding.identityTitle')}</h1>
+                <p style={{ color: '#b2a5c4', marginTop: 10 }}>{t('onboarding.identitySubtitle')}</p>
               </div>
               <GlassCard style={{ padding: 30 }}>
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -54,12 +56,12 @@ export function OnboardingPage() {
                   </div>
                   <h3 style={{ margin: 0 }}>{user.displayName}</h3>
                 </div>
-                <Field label="Public Handle (@)" value={handle} onChange={(e) => setHandle(e.target.value)} />
+                <Field label={t('onboarding.publicHandle')} value={handle} onChange={(e) => setHandle(e.target.value)} />
                 <div style={{ marginTop: 20 }}>
-                  <label style={{ fontSize: '10px', color: '#8e829d' }}>Train Together ID (Fixed)</label>
+                  <label style={{ fontSize: '10px', color: '#8e829d' }}>{t('onboarding.publicCode')}</label>
                   <strong style={{ display: 'block', fontSize: '16px', color: '#e5dafa', fontFamily: "'DM Mono', monospace", marginTop: 5 }}>{user.publicCode}</strong>
                 </div>
-                <NeonButton style={{ width: '100%', marginTop: 30 }} onClick={handleNext}>Continue <ArrowRight size={16} /></NeonButton>
+                <NeonButton style={{ width: '100%', marginTop: 30 }} onClick={handleNext}>{t('common.continue')} <ArrowRight size={16} /></NeonButton>
               </GlassCard>
             </motion.div>
           )}
@@ -67,31 +69,31 @@ export function OnboardingPage() {
           {step === 2 && (
             <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div style={{ textAlign: 'center', marginBottom: 30 }}>
-                <span className="eyebrow-label">Step 2 of 2</span>
-                <h1>Find your person</h1>
-                <p style={{ color: '#b2a5c4', marginTop: 10 }}>Train Together is better shared. Connect with a partner or friend to start a Household.</p>
+                <span className="eyebrow-label">{t('onboarding.step', { current: 2 })}</span>
+                <h1>{t('onboarding.findPersonTitle')}</h1>
+                <p style={{ color: '#b2a5c4', marginTop: 10 }}>{t('onboarding.findPersonSubtitle')}</p>
               </div>
               <GlassCard style={{ padding: 30, display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <NeonButton variant="secondary" onClick={() => navigate('/app/people')} style={{ width: '100%', padding: '20px 15px', display: 'flex', justifyContent: 'flex-start', gap: 15 }}>
                   <Search size={20} color="#b78fff" />
                   <div style={{ textAlign: 'left' }}>
-                    <strong style={{ display: 'block', color: '#fff' }}>Search by Handle</strong>
-                    <span style={{ fontSize: 12, color: '#b2a5c4' }}>Find someone using their @handle or TT-code</span>
+                    <strong style={{ display: 'block', color: '#fff' }}>{t('onboarding.searchHandle')}</strong>
+                    <span style={{ fontSize: 12, color: '#b2a5c4' }}>{t('onboarding.searchHandleSubtitle')}</span>
                   </div>
                 </NeonButton>
               
-                <div style={{ textAlign: 'center', color: '#8e829d', fontSize: 12, margin: '5px 0' }}>OR</div>
+                <div style={{ textAlign: 'center', color: '#8e829d', fontSize: 12, margin: '5px 0' }}>{t('common.or')}</div>
 
                 <NeonButton variant="secondary" onClick={() => navigate('/app/household')} style={{ width: '100%', padding: '20px 15px', display: 'flex', justifyContent: 'flex-start', gap: 15 }}>
                   <Users size={20} color="#db5ddc" />
                   <div style={{ textAlign: 'left' }}>
-                    <strong style={{ display: 'block', color: '#fff' }}>View Invitations</strong>
-                    <span style={{ fontSize: 12, color: '#b2a5c4' }}>Check if someone invited you</span>
+                    <strong style={{ display: 'block', color: '#fff' }}>{t('onboarding.viewInvitations')}</strong>
+                    <span style={{ fontSize: 12, color: '#b2a5c4' }}>{t('onboarding.viewInvitationsSubtitle')}</span>
                   </div>
                 </NeonButton>
 
                 <button onClick={handleNext} style={{ background: 'none', border: 'none', color: '#8e829d', textDecoration: 'underline', marginTop: 15, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  Skip for now, I'll do this later
+                  {t('onboarding.skip')}
                 </button>
               </GlassCard>
             </motion.div>

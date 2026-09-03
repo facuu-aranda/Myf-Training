@@ -47,6 +47,8 @@ async function seed() {
   const profiles = demoState.profiles.map((profile: Profile) => ({ id: userIds[profile.username], username: profile.username, display_name: profile.displayName, first_name: profile.firstName, avatar_url: profile.avatarUrl, height_cm: profile.heightCm, weight_kg: profile.weightKg, daily_step_goal: profile.dailyStepGoal, daily_calorie_goal: profile.dailyCalorieGoal, active: profile.active }))
   await upsert('profiles', profiles)
   await upsert('couple_members', Object.values(userIds).map((userId) => ({ couple_id: coupleId, user_id: userId })), 'couple_id,user_id')
+  await upsert('households', [{ id: coupleId, name: 'My Household', household_type: 'duo', legacy_couple_id: coupleId, owner_user_id: userIds.fabricio, max_members: 2 }])
+  await upsert('household_members', [{ household_id: coupleId, user_id: userIds.fabricio, role: 'owner' }, { household_id: coupleId, user_id: userIds.maria, role: 'member' }], 'household_id,user_id')
   await upsert('nutrition_plans', demoState.nutritionPlans.map((plan) => ({ id: stableUuid(`nutrition:${plan.userId}`), user_id: userIds[demoState.profiles.find((profile) => profile.id === plan.userId)?.username ?? ''], calories: plan.calories, protein: plan.protein, carbs: plan.carbs, fats: plan.fats, fiber: plan.fiber, notes: plan.notes, starts_on: plan.startsOn })))
   await upsert('exercises', demoState.exercises.map(exerciseRow), 'external_id')
   const exerciseQuery = await admin.from('exercises').select('id, external_id')

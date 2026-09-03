@@ -2,7 +2,7 @@
 ## Master implementation brief for coding agents
 
 > **Baseline date:** 2026-09-02  
-> **Baseline source:** `DOCUMENTACION_TECNICA(1).md`  
+> **Baseline source:** `DOCUMENTACION_TECNICA.md`
 > **Purpose:** transform the existing private fitness/nutrition application into the architectural foundation of a scalable SaaS, without breaking current functionality.
 
 ---

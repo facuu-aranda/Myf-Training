@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Avatar, GlassCard, LoadingState, SectionHeading, StatusPill } from './ui'
 import { buildNutritionComparison, calculateNutritionAdherence, sumNutritionComparison } from '../lib/nutrition-analytics'
-import { loadFoodLogsInRange, loadMealPlansForHousehold, loadSharedFoodLogs, loadUserCoupleId } from '../lib/repository'
+import { loadFoodLogsInRange, loadMealPlansForHousehold, loadSharedFoodLogs, loadUserHouseholdId } from '../lib/repository'
 import { subscribeToNutritionChanges } from '../lib/supabase'
 import { formatNumber, getDateKey, getStartOfWeek } from '../lib/utils'
 import type { Profile } from '../types'
@@ -34,9 +34,9 @@ export function CoupleNutritionPanel({ userId, profiles }: { userId: string; pro
     setIsLoading(true)
     setError('')
     try {
-      const coupleId = await loadUserCoupleId(userId)
-      if (!coupleId) { setSummaries([]); return }
-      const [plans, ownLogs, sharedLogs] = await Promise.all([loadMealPlansForHousehold(userId, coupleId, startsOn, endsOn), loadFoodLogsInRange(userId, startsOn, endsOn), loadSharedFoodLogs(coupleId, startsOn, endsOn)])
+      const householdId = await loadUserHouseholdId(userId)
+      if (!householdId) { setSummaries([]); return }
+      const [plans, ownLogs, sharedLogs] = await Promise.all([loadMealPlansForHousehold(userId, householdId, startsOn, endsOn), loadFoodLogsInRange(userId, startsOn, endsOn), loadSharedFoodLogs(householdId, startsOn, endsOn)])
       const next = profiles.map((profile) => {
         const profilePlans = plans.filter((plan) => plan.userId === profile.id)
         const profileLogs = profile.id === userId ? ownLogs : sharedLogs.filter((log) => log.userId === profile.id)

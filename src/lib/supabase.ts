@@ -10,12 +10,13 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
       },
     })
   : null
 
-export type RealtimeTable = 'workout_sessions' | 'exercise_sets' | 'daily_metrics' | 'personal_records' | 'activity_events' | 'food_logs' | 'food_log_items' | 'meal_plans' | 'meal_plan_days' | 'planned_meals' | 'grocery_lists' | 'grocery_list_items'
+export type RealtimeTable = 'workout_sessions' | 'exercise_sets' | 'daily_metrics' | 'personal_records' | 'activity_events' | 'food_logs' | 'food_log_items' | 'meal_plans' | 'meal_plan_days' | 'planned_meals' | 'grocery_lists' | 'grocery_list_items' | 'households' | 'household_members' | 'household_invitations' | 'profile_follows'
 
 export function subscribeToFitnessChanges(onChange: () => void) {
   if (!supabase) return () => undefined
@@ -43,6 +44,20 @@ export function subscribeToNutritionChanges(onChange: () => void) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'planned_meals' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'grocery_lists' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'grocery_list_items' }, onChange)
+    .subscribe()
+  return () => {
+    void supabase.removeChannel(channel)
+  }
+}
+
+export function subscribeToSocialChanges(onChange: () => void) {
+  if (!supabase) return () => undefined
+  const channel = supabase
+    .channel('social-household-updates')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'households' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'household_members' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'household_invitations' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_follows' }, onChange)
     .subscribe()
   return () => {
     void supabase.removeChannel(channel)

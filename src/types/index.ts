@@ -108,7 +108,7 @@ export interface RecipeIngredient {
 export interface Recipe {
   id: string
   createdBy: string | null
-  coupleId: string | null
+  householdId?: string | null
   name: string
   nameEs: string
   description: string
@@ -149,8 +149,8 @@ export interface FoodLogItem {
 export interface FoodLog {
   id: string
   userId: string
-  coupleId: string | null
-  visibility: FoodLogVisibility
+  householdId?: string | null
+  visibility: 'private' | 'household'
   consumedOn: string
   consumedAt: string
   mealType: MealType
@@ -201,7 +201,7 @@ export interface MealPlanDay {
 export interface MealPlan {
   id: string
   userId: string
-  coupleId: string | null
+  householdId?: string | null
   name: string
   startsOn: string
   endsOn: string
@@ -242,7 +242,7 @@ export interface GroceryListItem {
 
 export interface GroceryList {
   id: string
-  coupleId: string
+  householdId: string
   createdBy: string | null
   startsOn: string
   endsOn: string
@@ -257,6 +257,11 @@ export type LivePhase = 'ready' | 'set' | 'rest' | 'complete'
 export interface Profile {
   id: string
   username: string
+  publicHandle: string
+  publicCode: string
+  discoverable: boolean
+  profileVisibility: 'discoverable' | 'private'
+  progressVisibility: 'household' | 'followers' | 'private'
   displayName: string
   firstName: string
   avatarUrl: string
@@ -268,6 +273,68 @@ export interface Profile {
   createdAt: string
   updatedAt: string
   passwordHash?: string
+}
+
+export type HouseholdType = 'duo' | 'house'
+export type HouseholdRole = 'owner' | 'member'
+export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked' | 'declined'
+export type FollowStatus = 'pending' | 'accepted' | 'rejected' | 'blocked'
+
+export interface Household {
+  id: string
+  name: string
+  householdType: HouseholdType
+  legacyCoupleId: string | null
+  ownerUserId: string
+  maxMembers: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface HouseholdMember {
+  householdId: string
+  userId: string
+  role: HouseholdRole
+  joinedAt: string
+  leftAt: string | null
+  profile?: Profile
+}
+
+export interface HouseholdInvitation {
+  id: string
+  householdId: string
+  inviterUserId: string
+  inviteeUserId: string | null
+  tokenHash: string | null
+  status: InvitationStatus
+  expiresAt: string
+  acceptedAt: string | null
+  revokedAt: string | null
+  createdAt: string
+  household?: Household
+  inviter?: Profile
+}
+
+export interface ProfileFollow {
+  id: string
+  followerId: string
+  followedId: string
+  status: FollowStatus
+  createdAt: string
+  updatedAt: string
+  acceptedAt: string | null
+  follower?: Profile
+  followed?: Profile
+}
+
+export interface PublicProfile {
+  id: string
+  publicHandle: string
+  publicCode: string
+  displayName: string
+  firstName?: string
+  avatarUrl?: string
+  discoverable: boolean
 }
 
 export interface NutritionPlan {

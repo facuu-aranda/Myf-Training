@@ -53,7 +53,6 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!supabaseUrl || !serviceRoleKey) throw new Error('Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY before running yarn seed:nutrition:demo.')
 
 const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
-const coupleId = '11111111-1111-4111-8111-111111111111'
 const demoDate = process.env.DEMO_SEED_DATE ?? getDateKey(new Date())
 const demoDateObject = new Date(`${demoDate}T12:00:00`)
 const weekStart = getStartOfWeek(demoDateObject)
@@ -93,6 +92,13 @@ async function listUsers() {
   const users = { fabricio: result.data.users.find((user) => user.email === 'fabricio@train-together.local'), maria: result.data.users.find((user) => user.email === 'maria@train-together.local') }
   if (!users.fabricio || !users.maria) throw new Error('Both demo users must exist. Run yarn seed first.')
   return { fabricio: users.fabricio.id, maria: users.maria.id }
+}
+
+async function loadHouseholdId(userId: string) {
+  const result = await admin.from('household_members').select('household_id').eq('user_id', userId).is('left_at', null).maybeSingle()
+  if (result.error) throw result.error
+  if (!result.data?.household_id) throw new Error('The demo users must belong to an active household before running the nutrition demo seed.')
+  return String(result.data.household_id)
 }
 
 async function findFoods() {
@@ -153,8 +159,8 @@ function recipeNutrition(recipe: RecipeDefinition, foods: Record<string, FoodRow
   return scaleNutrition(recipe.ingredients.reduce((total, ingredient) => addNutrition(total, foodNutrition(foods[ingredient.foodKey], ingredient.quantity)), emptyNutrition()), 1 / recipe.servings)
 }
 
-async function seedRecipes(userIds: Record<'fabricio' | 'maria', string>, foods: Record<string, FoodRow>) {
-  const recipes = recipeDefinitions.map((recipe) => ({ id: stableUuid(`nutrition-demo:recipe:${recipe.key}`), created_by: userIds.fabricio, couple_id: coupleId, name: recipe.name, name_es: recipe.nameEs, description: recipe.description, instructions: recipe.instructions, prep_time_minutes: 10, cook_time_minutes: 20, servings: recipe.servings, image_url: null, visibility: 'household' }))
+async function seedRecipes(userIds: Record<'fabricio' | 'maria', string>, foods: Record<string, FoodRow>, householdId: string) {
+  const recipes = recipeDefinitions.map((recipe) => ({ id: stableUuid(`nutrition-demo:recipe:${recipe.key}`), created_by: userIds.fabricio, household_id: householdId, name: recipe.name, name_es: recipe.nameEs, description: recipe.description, instructions: recipe.instructions, prep_time_minutes: 10, cook_time_minutes: 20, servings: recipe.servings, image_url: null, visibility: 'household' }))
   const recipeCount = await upsertDemoRows('recipes', recipes)
   const ingredients = recipeDefinitions.flatMap((recipe) => recipe.ingredients.map((ingredient, index) => ({ id: stableUuid(`nutrition-demo:recipe-ingredient:${recipe.key}:${index}`), recipe_id: stableUuid(`nutrition-demo:recipe:${recipe.key}`), food_id: foods[ingredient.foodKey].id, food_portion_id: defaultPortion(foods[ingredient.foodKey]), quantity: ingredient.quantity, unit: 'g', normalized_grams: ingredient.quantity, normalized_ml: null, notes: '', order_index: index })))
   const ingredientCount = await upsertDemoRows('recipe_ingredients', ingredients)
@@ -164,14 +170,14 @@ async function seedRecipes(userIds: Record<'fabricio' | 'maria', string>, foods:
 function recipeId(key: string) { return stableUuid(`nutrition-demo:recipe:${key}`) }
 function recipeByKey(key: string) { const recipe = recipeDefinitions.find((item) => item.key === key); if (!recipe) throw new Error(`Unknown demo recipe: ${key}`); return recipe }
 
-async function seedMealPlans(userIds: Record<'fabricio' | 'maria', string>, foods: Record<string, FoodRow>) {
+async function seedMealPlans(userIds: Record<'fabricio' | 'maria', string>, foods: Record<string, FoodRow>, householdId: string) {
   const planRows: Row[] = []
   const dayRows: Row[] = []
   const mealRows: Row[] = []
   const userConfig = { fabricio: { banana: 130, breakfast: 1, lunch: 1, dinner: 1 }, maria: { banana: 100, breakfast: 0.9, lunch: 0.8, dinner: 0.8 } }
   for (const username of ['fabricio', 'maria'] as const) {
     const planId = stableUuid(`nutrition-demo:meal-plan:${username}:${startsOn}`)
-    planRows.push({ id: planId, user_id: userIds[username], couple_id: coupleId, name: `Demo week · ${username}`, starts_on: startsOn, ends_on: endsOn, visibility: 'private' })
+    planRows.push({ id: planId, user_id: userIds[username], household_id: householdId, name: `Demo week · ${username}`, starts_on: startsOn, ends_on: endsOn, visibility: 'private' })
     for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
       const date = getDateKey(addDays(weekStart, dayIndex))
       const dayId = stableUuid(`nutrition-demo:meal-plan-day:${username}:${date}`)
@@ -197,7 +203,7 @@ async function seedMealPlans(userIds: Record<'fabricio' | 'maria', string>, food
   return { plansAdded, daysAdded, mealsAdded }
 }
 
-async function seedFoodLogs(userIds: Record<'fabricio' | 'maria', string>, foods: Record<string, FoodRow>) {
+async function seedFoodLogs(userIds: Record<'fabricio' | 'maria', string>, foods: Record<string, FoodRow>, householdId: string) {
   const logs: Row[] = []
   const items: Row[] = []
   const logDays = currentDayIndex + 1
@@ -215,7 +221,7 @@ async function seedFoodLogs(userIds: Record<'fabricio' | 'maria', string>, foods
       mealDefinitions.forEach((meal) => {
         const logId = stableUuid(`nutrition-demo:food-log:${username}:${date}:${meal.key}`)
         const visibility = meal.key === 'dinner' && dayIndex % 2 === 1 ? 'private' : 'household'
-        logs.push({ id: logId, user_id: userIds[username], couple_id: coupleId, visibility, consumed_on: date, consumed_at: `${date}T${meal.time}:00.000Z`, meal_type: meal.mealType, notes: 'Demo seed · adjust this meal to match the real day.' })
+        logs.push({ id: logId, user_id: userIds[username], household_id: householdId, visibility, consumed_on: date, consumed_at: `${date}T${meal.time}:00.000Z`, meal_type: meal.mealType, notes: 'Demo seed · adjust this meal to match the real day.' })
         items.push({ id: stableUuid(`nutrition-demo:food-log-item:${username}:${date}:${meal.key}`), food_log_id: logId, food_id: meal.food ? foods[meal.food].id : null, recipe_id: meal.recipe ? recipeId(meal.recipe) : null, food_portion_id: meal.food ? defaultPortion(foods[meal.food]) : null, quantity: meal.quantity, unit: meal.food ? 'g' : 'portion', normalized_grams: meal.food ? meal.quantity : null, normalized_ml: null, precision: meal.food ? 'exact' : 'portion', notes: '' })
       })
     }
@@ -232,11 +238,11 @@ async function seedFavorites(userIds: Record<'fabricio' | 'maria', string>, food
   return favorites.length
 }
 
-async function seedGrocery(userIds: Record<'fabricio' | 'maria', string>, foods: Record<string, FoodRow>) {
-  const existingList = await admin.from('grocery_lists').select('id').eq('couple_id', coupleId).eq('starts_on', startsOn).eq('ends_on', endsOn).maybeSingle()
+async function seedGrocery(userIds: Record<'fabricio' | 'maria', string>, foods: Record<string, FoodRow>, householdId: string) {
+  const existingList = await admin.from('grocery_lists').select('id').eq('household_id', householdId).eq('starts_on', startsOn).eq('ends_on', endsOn).maybeSingle()
   if (existingList.error) throw existingList.error
   const listId = typeof existingList.data?.id === 'string' ? existingList.data.id : stableUuid(`nutrition-demo:grocery-list:${startsOn}`)
-  const listAdded = existingList.data ? 0 : await upsertDemoRows('grocery_lists', [{ id: listId, couple_id: coupleId, created_by: userIds.fabricio, starts_on: startsOn, ends_on: endsOn, status: 'current' }])
+  const listAdded = existingList.data ? 0 : await upsertDemoRows('grocery_lists', [{ id: listId, household_id: householdId, created_by: userIds.fabricio, starts_on: startsOn, ends_on: endsOn, status: 'current' }])
   const definitions: Array<{ key: string; calculated: number; suggested: number; category: string; source: string }> = [
     { key: 'chicken', calculated: 2400, suggested: 3, category: 'protein', source: 'recipe-derived' },
     { key: 'rice', calculated: 1800, suggested: 2, category: 'grains', source: 'recipe-derived' },
@@ -254,12 +260,13 @@ async function seedGrocery(userIds: Record<'fabricio' | 'maria', string>, foods:
 
 async function seed() {
   const userIds = await listUsers()
+  const householdId = await loadHouseholdId(userIds.fabricio)
   const foods = await findFoods()
-  const recipes = await seedRecipes(userIds, foods)
-  const plans = await seedMealPlans(userIds, foods)
-  const logs = await seedFoodLogs(userIds, foods)
+  const recipes = await seedRecipes(userIds, foods, householdId)
+  const plans = await seedMealPlans(userIds, foods, householdId)
+  const logs = await seedFoodLogs(userIds, foods, householdId)
   const favorites = await seedFavorites(userIds, foods)
-  const grocery = await seedGrocery(userIds, foods)
+  const grocery = await seedGrocery(userIds, foods, householdId)
   console.log(JSON.stringify({ demoDate, period: { startsOn, endsOn }, users: 2, recipes, plans, logs, favorites, grocery }, null, 2))
 }
 

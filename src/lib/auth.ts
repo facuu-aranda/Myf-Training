@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { loadAuthenticatedProfile } from './repository'
 import { SESSION_KEY, readStorage, removeStorage, writeStorage } from './storage'
 import type { Profile } from '../types'
 
@@ -29,7 +30,7 @@ export async function authenticate(username: string, password: string, profiles:
   if (supabase) {
     const { data, error } = await supabase.auth.signInWithPassword({ email: usernameToEmail(username), password })
     if (error || !data.user) throw new Error('INVALID_CREDENTIALS')
-    const profile = profiles.find((item) => item.id === data.user.id) ?? profiles.find((item) => item.username === username)
+    const profile = profiles.find((item) => item.id === data.user.id) ?? profiles.find((item) => item.username === username) ?? await loadAuthenticatedProfile(data.user.id)
     if (!profile) throw new Error('PROFILE_NOT_FOUND')
     return profile
   }
@@ -44,9 +45,9 @@ export async function authenticate(username: string, password: string, profiles:
 
 export async function getAuthenticatedProfile(profiles: Profile[]) {
   if (supabase) {
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) return null
-    return profiles.find((profile) => profile.id === data.user.id) ?? profiles.find((profile) => profile.username === data.user.email?.split('@')[0]) ?? null
+    const { data, error } = await supabase.auth.getUser()
+    if (error || !data.user) return null
+    return profiles.find((profile) => profile.id === data.user.id) ?? profiles.find((profile) => profile.username === data.user.email?.split('@')[0]) ?? await loadAuthenticatedProfile(data.user.id)
   }
   const profileId = readStorage<string | null>(SESSION_KEY, null)
   return profiles.find((profile) => profile.id === profileId) ?? null

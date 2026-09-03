@@ -57,6 +57,14 @@ export function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
 
-export function localizedName(item: { name: string; nameEs: string }, language: 'en' | 'es') {
-  return language === 'es' ? item.nameEs : item.name
+export function formatFoodName(name: string, short = false) {
+  if (!name || !short) return name
+  const parts = name.split(',')
+  if (parts.length <= 2) return name
+  return `${parts[0].trim()}, ${parts[1].trim()}`
+}
+
+export function localizedName(item: { name: string; nameEs: string }, language: 'en' | 'es', short = true) {
+  const name = language === 'es' ? item.nameEs : item.name
+  return formatFoodName(name, short)
 }

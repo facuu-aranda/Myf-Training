@@ -9,7 +9,14 @@ const booleanValue = (value: unknown, fallback = false) => typeof value === 'boo
 const arrayValue = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 
 function profileFromRow(row: Row): Profile {
-  return { id: stringValue(row.id), username: stringValue(row.username), displayName: stringValue(row.display_name), firstName: stringValue(row.first_name, stringValue(row.display_name).split(' ')[0]), avatarUrl: stringValue(row.avatar_url), heightCm: numberValue(row.height_cm), weightKg: numberValue(row.weight_kg), dailyStepGoal: numberValue(row.daily_step_goal, 10000), dailyCalorieGoal: numberValue(row.daily_calorie_goal, 2000), active: booleanValue(row.active, true), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
+  return { id: stringValue(row.id), username: stringValue(row.username), publicHandle: stringValue(row.public_handle), publicCode: stringValue(row.public_code), discoverable: booleanValue(row.discoverable, true), profileVisibility: stringValue(row.profile_visibility, 'discoverable') as Profile['profileVisibility'], progressVisibility: stringValue(row.progress_visibility, 'household') as Profile['progressVisibility'], displayName: stringValue(row.display_name), firstName: stringValue(row.first_name, stringValue(row.display_name).split(' ')[0]), avatarUrl: stringValue(row.avatar_url), heightCm: numberValue(row.height_cm), weightKg: numberValue(row.weight_kg), dailyStepGoal: numberValue(row.daily_step_goal, 10000), dailyCalorieGoal: numberValue(row.daily_calorie_goal, 2000), active: booleanValue(row.active, true), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
+}
+
+export async function loadAuthenticatedProfile(userId: string): Promise<Profile | null> {
+  if (!supabase || !userId) return null
+  const result = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+  if (result.error) throw result.error
+  return result.data ? profileFromRow(result.data as Row) : null
 }
 
 function exerciseFromRow(row: Row): Exercise {
@@ -69,7 +76,7 @@ function recipeIngredientFromRow(row: Row): RecipeIngredient {
 }
 
 function recipeFromRow(row: Row): Recipe {
-  return { id: stringValue(row.id), createdBy: typeof row.created_by === 'string' ? row.created_by : null, coupleId: typeof row.couple_id === 'string' ? row.couple_id : null, name: stringValue(row.name), nameEs: stringValue(row.name_es, stringValue(row.name)), description: stringValue(row.description), instructions: stringValue(row.instructions), prepTimeMinutes: numberValue(row.prep_time_minutes), cookTimeMinutes: numberValue(row.cook_time_minutes), servings: numberValue(row.servings, 1), imageUrl: stringValue(row.image_url), visibility: stringValue(row.visibility, 'private') as RecipeVisibility, ingredients: rows(row.recipe_ingredients).map(recipeIngredientFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
+  return { id: stringValue(row.id), createdBy: typeof row.created_by === 'string' ? row.created_by : null, householdId: typeof row.household_id === 'string' ? row.household_id : undefined, name: stringValue(row.name), nameEs: stringValue(row.name_es, stringValue(row.name)), description: stringValue(row.description), instructions: stringValue(row.instructions), prepTimeMinutes: numberValue(row.prep_time_minutes), cookTimeMinutes: numberValue(row.cook_time_minutes), servings: numberValue(row.servings, 1), imageUrl: stringValue(row.image_url), visibility: stringValue(row.visibility, 'private') as RecipeVisibility, ingredients: rows(row.recipe_ingredients).map(recipeIngredientFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
 }
 
 function foodLogItemFromRow(row: Row): FoodLogItem {
@@ -80,7 +87,7 @@ function foodLogItemFromRow(row: Row): FoodLogItem {
 }
 
 function foodLogFromRow(row: Row): FoodLog {
-  return { id: stringValue(row.id), userId: stringValue(row.user_id), coupleId: typeof row.couple_id === 'string' ? row.couple_id : null, visibility: stringValue(row.visibility, 'private') as FoodLogVisibility, consumedOn: stringValue(row.consumed_on), consumedAt: stringValue(row.consumed_at), mealType: stringValue(row.meal_type, 'other') as MealType, notes: stringValue(row.notes), items: rows(row.food_log_items).map(foodLogItemFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
+  return { id: stringValue(row.id), userId: stringValue(row.user_id), householdId: typeof row.household_id === 'string' ? row.household_id : undefined, visibility: stringValue(row.visibility, 'private') as FoodLogVisibility, consumedOn: stringValue(row.consumed_on), consumedAt: stringValue(row.consumed_at), mealType: stringValue(row.meal_type, 'other') as MealType, notes: stringValue(row.notes), items: rows(row.food_log_items).map(foodLogItemFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
 }
 
 function plannedMealFromRow(row: Row): PlannedMeal {
@@ -94,7 +101,7 @@ function mealPlanDayFromRow(row: Row): MealPlanDay {
 }
 
 function mealPlanFromRow(row: Row): MealPlan {
-  return { id: stringValue(row.id), userId: stringValue(row.user_id), coupleId: typeof row.couple_id === 'string' ? row.couple_id : null, name: stringValue(row.name), startsOn: stringValue(row.starts_on), endsOn: stringValue(row.ends_on), visibility: stringValue(row.visibility, 'private') as MealPlanVisibility, days: rows(row.meal_plan_days).map(mealPlanDayFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
+  return { id: stringValue(row.id), userId: stringValue(row.user_id), householdId: typeof row.household_id === 'string' ? row.household_id : undefined, name: stringValue(row.name), startsOn: stringValue(row.starts_on), endsOn: stringValue(row.ends_on), visibility: stringValue(row.visibility, 'private') as MealPlanVisibility, days: rows(row.meal_plan_days).map(mealPlanDayFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
 }
 
 function groceryItemFromRow(row: Row): GroceryListItem {
@@ -103,7 +110,7 @@ function groceryItemFromRow(row: Row): GroceryListItem {
 }
 
 function groceryListFromRow(row: Row): GroceryList {
-  return { id: stringValue(row.id), coupleId: stringValue(row.couple_id), createdBy: typeof row.created_by === 'string' ? row.created_by : null, startsOn: stringValue(row.starts_on), endsOn: stringValue(row.ends_on), status: stringValue(row.status, 'current') as GroceryListStatus, items: rows(row.grocery_list_items).map(groceryItemFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
+  return { id: stringValue(row.id), householdId: stringValue(row.household_id), createdBy: typeof row.created_by === 'string' ? row.created_by : null, startsOn: stringValue(row.starts_on), endsOn: stringValue(row.ends_on), status: stringValue(row.status, 'current') as GroceryListStatus, items: rows(row.grocery_list_items).map(groceryItemFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
 }
 
 const FOOD_SELECT = '*, food_sources(*), food_nutrients(*), food_portions(*)'
@@ -157,16 +164,16 @@ export async function loadRecipes(): Promise<Recipe[]> {
   return rows(result.data).map(recipeFromRow)
 }
 
-export async function loadUserCoupleId(userId: string): Promise<string | null> {
-  if (!supabase || !userId) return null
-  const result = await supabase.from('couple_members').select('couple_id').eq('user_id', userId).maybeSingle()
-  if (result.error) throw result.error
-  return typeof result.data?.couple_id === 'string' ? result.data.couple_id : null
+export async function loadUserHouseholdId(userId: string): Promise<string | null> {
+  if (!supabase) return null
+  const result = await supabase.from('household_members').select('household_id').eq('user_id', userId).maybeSingle()
+  if (result.error) return null
+  return typeof result.data?.household_id === 'string' ? result.data.household_id : null
 }
 
 export async function saveRecipe(recipe: Recipe): Promise<void> {
   if (!supabase) return
-  const recipeResult = await supabase.from('recipes').upsert({ id: recipe.id, created_by: recipe.createdBy, couple_id: recipe.coupleId, name: recipe.name, name_es: recipe.nameEs, description: recipe.description, instructions: recipe.instructions, prep_time_minutes: recipe.prepTimeMinutes, cook_time_minutes: recipe.cookTimeMinutes, servings: recipe.servings, image_url: recipe.imageUrl || null, visibility: recipe.visibility }, { onConflict: 'id' }).select('id').single()
+  const recipeResult = await supabase.from('recipes').upsert({ id: recipe.id, created_by: recipe.createdBy, household_id: recipe.householdId, name: recipe.name, name_es: recipe.nameEs, description: recipe.description, instructions: recipe.instructions, prep_time_minutes: recipe.prepTimeMinutes, cook_time_minutes: recipe.cookTimeMinutes, servings: recipe.servings, image_url: recipe.imageUrl || null, visibility: recipe.visibility }, { onConflict: 'id' }).select('id').single()
   if (recipeResult.error) throw recipeResult.error
   const deleteResult = await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipe.id)
   if (deleteResult.error) throw deleteResult.error
@@ -200,16 +207,16 @@ export async function loadFoodLogsInRange(userId: string, startsOn: string, ends
   return rows(result.data).map(foodLogFromRow)
 }
 
-export async function loadSharedFoodLogs(coupleId: string, startsOn: string, endsOn: string): Promise<FoodLog[]> {
-  if (!supabase || !coupleId) return []
-  const result = await supabase.from('food_logs').select(FOOD_LOG_SELECT).eq('couple_id', coupleId).eq('visibility', 'household').gte('consumed_on', startsOn).lte('consumed_on', endsOn).order('consumed_at', { ascending: true })
+export async function loadSharedFoodLogs(householdId: string, startsOn: string, endsOn: string): Promise<FoodLog[]> {
+  if (!supabase || !householdId) return []
+  const result = await supabase.from('food_logs').select(FOOD_LOG_SELECT).eq('household_id', householdId).eq('visibility', 'household').gte('consumed_on', startsOn).lte('consumed_on', endsOn).order('consumed_at', { ascending: true })
   if (result.error) throw result.error
   return rows(result.data).map(foodLogFromRow)
 }
 
 export async function saveFoodLog(log: FoodLog): Promise<void> {
   if (!supabase) return
-  const logResult = await supabase.from('food_logs').upsert({ id: log.id, user_id: log.userId, couple_id: log.coupleId, visibility: log.visibility, consumed_on: log.consumedOn, consumed_at: log.consumedAt, meal_type: log.mealType, notes: log.notes }, { onConflict: 'id' }).select('id').single()
+  const logResult = await supabase.from('food_logs').upsert({ id: log.id, user_id: log.userId, household_id: log.householdId, visibility: log.visibility, consumed_on: log.consumedOn, consumed_at: log.consumedAt, meal_type: log.mealType, notes: log.notes }, { onConflict: 'id' }).select('id').single()
   if (logResult.error) throw logResult.error
   const deleteResult = await supabase.from('food_log_items').delete().eq('food_log_id', log.id)
   if (deleteResult.error) throw deleteResult.error
@@ -243,7 +250,7 @@ export async function loadMealPlansForUser(userId: string, startsOn: string, end
 
 export async function saveMealPlan(plan: MealPlan): Promise<void> {
   if (!supabase) return
-  const planResult = await supabase.from('meal_plans').upsert({ id: plan.id, user_id: plan.userId, couple_id: plan.coupleId, name: plan.name, starts_on: plan.startsOn, ends_on: plan.endsOn, visibility: plan.visibility }, { onConflict: 'id' }).select('id').single()
+  const planResult = await supabase.from('meal_plans').upsert({ id: plan.id, user_id: plan.userId, household_id: plan.householdId, name: plan.name, starts_on: plan.startsOn, ends_on: plan.endsOn, visibility: plan.visibility }, { onConflict: 'id' }).select('id').single()
   if (planResult.error) throw planResult.error
   const deleteDays = await supabase.from('meal_plan_days').delete().eq('meal_plan_id', plan.id)
   if (deleteDays.error) throw deleteDays.error
@@ -265,24 +272,24 @@ export async function deleteMealPlan(planId: string): Promise<void> {
 
 const GROCERY_LIST_SELECT = '*, grocery_list_items(*, foods(*, food_sources(*), food_nutrients(*), food_portions(*)))'
 
-export async function loadGroceryList(coupleId: string, startsOn: string, endsOn: string): Promise<GroceryList | null> {
-  if (!supabase || !coupleId) return null
-  const result = await supabase.from('grocery_lists').select(GROCERY_LIST_SELECT).eq('couple_id', coupleId).eq('starts_on', startsOn).eq('ends_on', endsOn).maybeSingle()
+export async function loadGroceryList(householdId: string, startsOn: string, endsOn: string): Promise<GroceryList | null> {
+  if (!supabase || !householdId) return null
+  const result = await supabase.from('grocery_lists').select(GROCERY_LIST_SELECT).eq('household_id', householdId).eq('starts_on', startsOn).eq('ends_on', endsOn).maybeSingle()
   if (result.error) throw result.error
   return result.data ? groceryListFromRow(result.data as Row) : null
 }
 
-export async function loadGroceryLists(coupleId: string, limit = 12): Promise<GroceryList[]> {
-  if (!supabase || !coupleId) return []
-  const result = await supabase.from('grocery_lists').select('*, grocery_list_items(id)').eq('couple_id', coupleId).order('starts_on', { ascending: false }).limit(Math.min(Math.max(limit, 1), 50))
+export async function loadGroceryLists(householdId: string, limit = 12): Promise<GroceryList[]> {
+  if (!supabase || !householdId) return []
+  const result = await supabase.from('grocery_lists').select('*, grocery_list_items(id)').eq('household_id', householdId).order('starts_on', { ascending: false }).limit(Math.min(Math.max(limit, 1), 50))
   if (result.error) throw result.error
   return rows(result.data).map(groceryListFromRow)
 }
 
-export async function loadMealPlansForHousehold(userId: string, coupleId: string, startsOn: string, endsOn: string): Promise<MealPlan[]> {
-  if (!supabase || !userId || !coupleId) return []
+export async function loadMealPlansForHousehold(userId: string, householdId: string, startsOn: string, endsOn: string): Promise<MealPlan[]> {
+  if (!supabase || !userId || !householdId) return []
   const ownQuery = supabase.from('meal_plans').select(MEAL_PLAN_SELECT).eq('user_id', userId).lte('starts_on', endsOn).gte('ends_on', startsOn)
-  const sharedQuery = supabase.from('meal_plans').select(MEAL_PLAN_SELECT).eq('couple_id', coupleId).eq('visibility', 'household').lte('starts_on', endsOn).gte('ends_on', startsOn)
+  const sharedQuery = supabase.from('meal_plans').select(MEAL_PLAN_SELECT).eq('household_id', householdId).eq('visibility', 'household').lte('starts_on', endsOn).gte('ends_on', startsOn)
   const [ownResult, sharedResult] = await Promise.all([ownQuery, sharedQuery])
   if (ownResult.error) throw ownResult.error
   if (sharedResult.error) throw sharedResult.error
@@ -294,7 +301,7 @@ export async function loadMealPlansForHousehold(userId: string, coupleId: string
 
 export async function saveGroceryList(list: GroceryList): Promise<void> {
   if (!supabase) return
-  const listResult = await supabase.from('grocery_lists').upsert({ id: list.id, couple_id: list.coupleId, created_by: list.createdBy, starts_on: list.startsOn, ends_on: list.endsOn, status: list.status }, { onConflict: 'id' }).select('id').single()
+  const listResult = await supabase.from('grocery_lists').upsert({ id: list.id, household_id: list.householdId, created_by: list.createdBy, starts_on: list.startsOn, ends_on: list.endsOn, status: list.status }, { onConflict: 'id' }).select('id').single()
   if (listResult.error) throw listResult.error
   const deleteItems = await supabase.from('grocery_list_items').delete().eq('grocery_list_id', list.id)
   if (deleteItems.error) throw deleteItems.error
@@ -351,7 +358,7 @@ async function save(table: string, payload: Row | Row[], options?: { onConflict?
   if (result.error) throw result.error
 }
 
-export function persistProfile(profile: Profile) { return save('profiles', { id: profile.id, username: profile.username, display_name: profile.displayName, first_name: profile.firstName, avatar_url: profile.avatarUrl, height_cm: profile.heightCm, weight_kg: profile.weightKg, daily_step_goal: profile.dailyStepGoal, daily_calorie_goal: profile.dailyCalorieGoal, active: profile.active }) }
+export function persistProfile(profile: Profile) { return save('profiles', { id: profile.id, username: profile.username, public_handle: profile.publicHandle, public_code: profile.publicCode, discoverable: profile.discoverable, profile_visibility: profile.profileVisibility, progress_visibility: profile.progressVisibility, display_name: profile.displayName, first_name: profile.firstName, avatar_url: profile.avatarUrl, height_cm: profile.heightCm, weight_kg: profile.weightKg, daily_step_goal: profile.dailyStepGoal, daily_calorie_goal: profile.dailyCalorieGoal, active: profile.active }) }
 export function persistNutrition(plan: NutritionPlan) { return save('nutrition_plans', { id: plan.id, user_id: plan.userId, calories: plan.calories, protein: plan.protein, carbs: plan.carbs, fats: plan.fats, fiber: plan.fiber, notes: plan.notes, starts_on: plan.startsOn }) }
 export function persistWorkoutDay(day: WorkoutDay) { return save('workout_days', { id: day.id, user_id: day.userId, name: day.name, name_es: day.nameEs, description: day.description, weekday: day.weekday, order_index: day.orderIndex, active: day.active, estimated_minutes: day.estimatedMinutes }) }
 export function persistWorkoutExercise(plan: WorkoutExercise) { return save('workout_exercises', { id: plan.id, workout_day_id: plan.workoutDayId, exercise_id: plan.exerciseId, order_index: plan.orderIndex, sets: plan.sets, target_reps: plan.targetReps, target_seconds: plan.targetSeconds ?? null, target_weight: plan.targetWeight, rest_seconds: plan.restSeconds, notes: plan.notes }) }

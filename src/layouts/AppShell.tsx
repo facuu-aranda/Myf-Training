@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, BarChart3, BookOpen, CalendarDays, Dumbbell, History, LayoutDashboard, LogOut, Menu, Settings2, Sparkles, Utensils, Users, X, Zap } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, CalendarDays, Dumbbell, History, LayoutDashboard, LogOut, Menu, Settings2, Sparkles, Utensils, Users, X, Zap, Search } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -16,10 +16,11 @@ const navItems = [
   { to: '/app/quick-log', key: 'quickLog', icon: Zap },
   { to: '/app/progress', key: 'progress', icon: BarChart3 },
   { to: '/app/history', key: 'history', icon: History },
-  { to: '/app/couple', key: 'couple', icon: Users },
+  { to: '/app/household', key: 'household', icon: Users },
+  { to: '/app/people', key: 'people', icon: Search },
   { to: '/app/exercises', key: 'exercises', icon: BookOpen },
 ]
-const mobileNavItems = navItems.filter(({ key }) => ['overview', 'live', 'nutrition', 'progress', 'couple'].includes(key))
+const mobileNavItems = navItems.filter(({ key }) => ['overview', 'live', 'nutrition', 'progress', 'household'].includes(key))
 
 export function AppShell() {
   const { t } = useTranslation()

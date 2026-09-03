@@ -16,6 +16,18 @@ from public.profiles p
 where p.username in ('fabricio', 'maria')
 on conflict (couple_id, user_id) do nothing;
 
+insert into public.households (id, name, household_type, legacy_couple_id, owner_user_id, max_members)
+select '11111111-1111-4111-8111-111111111111', 'My Household', 'duo', '11111111-1111-4111-8111-111111111111', p.id, 2
+from public.profiles p
+where p.username = 'fabricio'
+on conflict (id) do update set name = excluded.name, owner_user_id = excluded.owner_user_id, max_members = excluded.max_members;
+
+insert into public.household_members (household_id, user_id, role)
+select '11111111-1111-4111-8111-111111111111', p.id, case when p.username = 'fabricio' then 'owner' else 'member' end
+from public.profiles p
+where p.username in ('fabricio', 'maria')
+on conflict (household_id, user_id) do update set role = excluded.role, left_at = null;
+
 insert into public.nutrition_plans (user_id, calories, protein, carbs, fats, fiber, notes)
 select p.id,
   case when p.username = 'maria' then 1900 else 2200 end,

@@ -9,7 +9,7 @@ import { useFitness } from '../hooks/useFitness'
 import { calculateNutrition, calculateRecipeNutrition, scaleNutrition } from '../lib/nutrition'
 import { localizedFoodCategory, localizedFoodName } from '../lib/food'
 import { subscribeToNutritionChanges } from '../lib/supabase'
-import { loadMealPlan, loadRecipes, loadUserCoupleId, saveMealPlan, searchFoods } from '../lib/repository'
+import { loadMealPlan, loadRecipes, loadUserHouseholdId, saveMealPlan, searchFoods } from '../lib/repository'
 import { formatDate, formatNumber, getDateKey, getStartOfWeek, uid } from '../lib/utils'
 import type { Food, FoodPortion, FoodUnit, MealPlan, MealPlanDay, MealType, PlannedMeal, Recipe } from '../types'
 
@@ -35,7 +35,7 @@ interface PlannedMealDraft {
 const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'pre_workout', 'post_workout', 'other']
 
 function addDays(date: Date, amount: number) { const result = new Date(date); result.setDate(result.getDate() + amount); return result }
-function emptyPlan(userId: string, coupleId: string | null, start: Date): MealPlan { const startsOn = getDateKey(start); const days = Array.from({ length: 7 }, (_, index) => ({ id: uid('plan-day'), mealPlanId: '', planDate: getDateKey(addDays(start, index)), notes: '', meals: [], createdAt: '', updatedAt: '' } satisfies MealPlanDay)); const planId = uid('meal-plan'); return { id: planId, userId, coupleId, name: 'Weekly nutrition plan', startsOn, endsOn: getDateKey(addDays(start, 6)), visibility: 'private', days: days.map((day) => ({ ...day, mealPlanId: planId })), createdAt: '', updatedAt: '' } }
+function emptyPlan(userId: string, householdId: string | null, start: Date): MealPlan { const startsOn = getDateKey(start); const days = Array.from({ length: 7 }, (_, index) => ({ id: uid('plan-day'), mealPlanId: '', planDate: getDateKey(addDays(start, index)), notes: '', meals: [], createdAt: '', updatedAt: '' } satisfies MealPlanDay)); const planId = uid('meal-plan'); return { id: planId, userId, householdId, name: 'Weekly nutrition plan', startsOn, endsOn: getDateKey(addDays(start, 6)), visibility: 'private', days: days.map((day) => ({ ...day, mealPlanId: planId })), createdAt: '', updatedAt: '' } }
 function blankMeal(dayId: string): PlannedMealDraft { return { id: uid('planned-meal'), mealPlanDayId: dayId, mealType: 'lunch', scheduledTime: '12:00', source: 'food', food: null, recipe: null, quantity: '100', unit: 'g', portion: null, servings: '1', plannedCalories: '', notes: '', status: 'planned', completedAt: null, loggedAt: null } }
 function draftFromMeal(meal: PlannedMeal, recipes: Recipe[]): PlannedMealDraft { const recipe = meal.recipe ? recipes.find((item) => item.id === meal.recipe?.id) ?? meal.recipe : null; return { id: meal.id, mealPlanDayId: meal.mealPlanDayId, mealType: meal.mealType, scheduledTime: meal.scheduledTime ?? '12:00', source: meal.food ? 'food' : recipe ? 'recipe' : 'flexible', food: meal.food ?? null, recipe, quantity: meal.quantity === null ? '100' : String(meal.quantity), unit: meal.unit ?? 'g', portion: null, servings: meal.servings === null ? '1' : String(meal.servings), plannedCalories: meal.plannedCalories === null ? '' : String(meal.plannedCalories), notes: meal.notes, status: meal.status, completedAt: meal.completedAt, loggedAt: meal.loggedAt } }
 function mealLabel(type: MealType, t: (key: string) => string) { return t(`nutrition.mealTypes.${type}`) }
@@ -68,9 +68,9 @@ export function MealPlannerPage() {
     setIsLoading(true)
     setError('')
     try {
-      const [remotePlan, nextRecipes, nextCoupleId] = await Promise.all([loadMealPlan(user.id, startsOn, endsOn), loadRecipes(), loadUserCoupleId(user.id)])
+      const [remotePlan, nextRecipes, nextHouseholdId] = await Promise.all([loadMealPlan(user.id, startsOn, endsOn), loadRecipes(), loadUserHouseholdId(user.id)])
       setRecipes(nextRecipes)
-      setPlan(remotePlan ?? emptyPlan(user.id, nextCoupleId, weekStart))
+      setPlan(remotePlan ?? emptyPlan(user.id, nextHouseholdId, weekStart))
     } catch { setError(t('nutrition.plannedMealError')) } finally { setIsLoading(false) }
   }, [endsOn, startsOn, t, user, weekStart])
 

@@ -8,4 +8,4 @@ import { AuthProvider } from './contexts/AuthContext'
 import { FitnessProvider } from './contexts/FitnessContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><ErrorBoundary><BrowserRouter><FitnessProvider><AuthProvider><App /></AuthProvider></FitnessProvider></BrowserRouter></ErrorBoundary></React.StrictMode>)
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><ErrorBoundary><BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><FitnessProvider><AuthProvider><App /></AuthProvider></FitnessProvider></BrowserRouter></ErrorBoundary></React.StrictMode>)

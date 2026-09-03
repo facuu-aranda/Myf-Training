@@ -20,6 +20,11 @@ export const demoProfiles: Profile[] = [
   {
     id: 'user-fabricio',
     username: 'fabricio',
+    publicHandle: 'fabricio-0001',
+    publicCode: 'TT-FAB001',
+    discoverable: true,
+    profileVisibility: 'discoverable',
+    progressVisibility: 'household',
     displayName: 'Fabricio Ruiz',
     firstName: 'Fabricio',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=85',
@@ -34,6 +39,11 @@ export const demoProfiles: Profile[] = [
   {
     id: 'user-maria',
     username: 'maria',
+    publicHandle: 'maria-0002',
+    publicCode: 'TT-MAR002',
+    discoverable: true,
+    profileVisibility: 'discoverable',
+    progressVisibility: 'household',
     displayName: 'María Santos',
     firstName: 'María',
     avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=160&q=85',

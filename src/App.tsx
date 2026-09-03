@@ -1,10 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from './contexts/AuthContext'
 import { AppShell } from './layouts/AppShell'
 
-const CouplePage = lazy(async () => ({ default: (await import('./pages/CouplePage')).CouplePage }))
+const HouseholdPage = lazy(async () => ({ default: (await import('./pages/HouseholdPage')).HouseholdPage }))
 const DashboardPage = lazy(async () => ({ default: (await import('./pages/DashboardPage')).DashboardPage }))
 const ExerciseLibraryPage = lazy(async () => ({ default: (await import('./pages/ExerciseLibraryPage')).ExerciseLibraryPage }))
 const FoodLibraryPage = lazy(async () => ({ default: (await import('./pages/FoodLibraryPage')).FoodLibraryPage }))
@@ -22,6 +22,9 @@ const QuickLogPage = lazy(async () => ({ default: (await import('./pages/QuickLo
 const ProfilePage = lazy(async () => ({ default: (await import('./pages/ProfilePage')).ProfilePage }))
 const ProgressPage = lazy(async () => ({ default: (await import('./pages/ProgressPage')).ProgressPage }))
 const StrategyPage = lazy(async () => ({ default: (await import('./pages/StrategyPage')).StrategyPage }))
+const PeoplePage = lazy(async () => ({ default: (await import('./pages/PeoplePage')).PeoplePage }))
+const PublicProfilePage = lazy(async () => ({ default: (await import('./pages/PublicProfilePage')).PublicProfilePage }))
+const OnboardingPage = lazy(async () => ({ default: (await import('./pages/OnboardingPage')).OnboardingPage }))
 
 function LoadingPage() {
   const { t } = useTranslation()
@@ -30,10 +33,11 @@ function LoadingPage() {
 
 function ProtectedRoute() {
   const { user, isLoading } = useAuth()
+  const location = useLocation()
   if (isLoading) return <LoadingPage />
-  return user ? <AppShell /> : <Navigate to="/login" replace />
+  return user ? <AppShell /> : <Navigate to={`/login${location.search}${location.hash}`} replace />
 }
 
 export function App() {
-  return <Suspense fallback={<LoadingPage />}><Routes><Route path="/" element={<LandingPage />} /><Route path="/login" element={<LoginPage />} /><Route element={<ProtectedRoute />}><Route path="/app" element={<DashboardPage />} /><Route path="/app/strategy" element={<StrategyPage />} /><Route path="/app/live" element={<LiveTrainingPage />} /><Route path="/app/manual" element={<ManualTrainingPage />} /><Route path="/app/quick-log" element={<QuickLogPage />} /><Route path="/app/progress" element={<ProgressPage />} /><Route path="/app/history" element={<HistoryPage />} /><Route path="/app/couple" element={<CouplePage />} /><Route path="/app/exercises" element={<ExerciseLibraryPage />} /><Route path="/app/nutrition/foods" element={<FoodLibraryPage />} /><Route path="/app/nutrition/recipes" element={<RecipesPage />} /><Route path="/app/nutrition/log" element={<FoodLogPage />} /><Route path="/app/nutrition/planner" element={<MealPlannerPage />} /><Route path="/app/nutrition/grocery" element={<GroceryPage />} /><Route path="/app/nutrition/insights" element={<NutritionInsightsPage />} /><Route path="/app/profile" element={<ProfilePage />} /></Route><Route path="*" element={<Navigate to="/" replace />} /></Routes></Suspense>
+  return <Suspense fallback={<LoadingPage />}><Routes><Route path="/" element={<LandingPage />} /><Route path="/login" element={<LoginPage />} /><Route element={<ProtectedRoute />}><Route path="/app" element={<DashboardPage />} /><Route path="/app/onboarding" element={<OnboardingPage />} /><Route path="/app/strategy" element={<StrategyPage />} /><Route path="/app/live" element={<LiveTrainingPage />} /><Route path="/app/manual" element={<ManualTrainingPage />} /><Route path="/app/quick-log" element={<QuickLogPage />} /><Route path="/app/progress" element={<ProgressPage />} /><Route path="/app/history" element={<HistoryPage />} /><Route path="/app/household" element={<HouseholdPage />} /><Route path="/app/people" element={<PeoplePage />} /><Route path="/app/people/:handle" element={<PublicProfilePage />} /><Route path="/app/exercises" element={<ExerciseLibraryPage />} /><Route path="/app/nutrition/foods" element={<FoodLibraryPage />} /><Route path="/app/nutrition/recipes" element={<RecipesPage />} /><Route path="/app/nutrition/log" element={<FoodLogPage />} /><Route path="/app/nutrition/planner" element={<MealPlannerPage />} /><Route path="/app/nutrition/grocery" element={<GroceryPage />} /><Route path="/app/nutrition/insights" element={<NutritionInsightsPage />} /><Route path="/app/profile" element={<ProfilePage />} /></Route><Route path="*" element={<Navigate to="/" replace />} /></Routes></Suspense>
 }

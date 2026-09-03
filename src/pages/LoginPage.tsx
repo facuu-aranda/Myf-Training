@@ -9,14 +9,21 @@ import { isSupabaseConfigured } from '../lib/supabase'
 
 export function LoginPage() {
   const { t } = useTranslation()
-  const { user, signIn, isLoading } = useAuth()
+  const { user, signIn, signInWithGoogle, isLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
 
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''))
+    const callbackError = searchParams.get('error_description') ?? hashParams.get('error_description')
+    if (callbackError) { setError(callbackError); setGoogleSubmitting(false) }
+  }, [location.hash, location.search])
   useEffect(() => { if (user && !isLoading) navigate('/app', { replace: true }) }, [isLoading, navigate, user])
 
   const submit = async (event: FormEvent) => {
@@ -26,5 +33,16 @@ export function LoginPage() {
     try { await signIn(username, password); navigate((location.state as { from?: string } | null)?.from ?? '/app', { replace: true }) } catch { setError(t('auth.invalid')) } finally { setSubmitting(false) }
   }
 
-  return <div className="login-shell"><section className="login-visual"><Link to="/" className="public-brand" style={{ position: 'absolute', top: 28, left: 'clamp(25px, 7vw, 90px)' }}><span className="brand-mark"><Dumbbell size={16} /></span><strong>train<span>together</span></strong></Link><div className="login-visual-content"><span className="landing-eyebrow"><i />{t('landing.eyebrow')}</span><h1>{t('landing.titleOne')}<br /><span>{t('landing.titleTwo')}</span></h1><p>{t('landing.proof')}</p></div></section><section className="login-form-side"><Link to="/" className="login-back"><ArrowLeft size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />{t('auth.back')}</Link><div className="login-form-wrap"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span className="eyebrow-label">{t('appName')}</span><LanguageSwitcher compact /></div><h2>{t('auth.welcome')}</h2><p>{t('auth.subtitle')}</p><form className="login-form" onSubmit={submit}>{error && <div className="login-error" role="alert">{error}</div>}<Field label={t('auth.username')} value={username} onChange={(event) => setUsername(event.target.value)} placeholder={t('auth.usernamePlaceholder')} autoComplete="username" /><Field label={t('auth.password')} type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={t('auth.passwordPlaceholder')} autoComplete="current-password" /><NeonButton type="submit" size="lg" loading={submitting}>{submitting ? t('common.loading') : t('auth.submit')} <LockKeyhole size={15} /></NeonButton></form><div className="login-status"><i />{isSupabaseConfigured ? <StatusPill tone="green">{t('auth.configured')}</StatusPill> : <span>{t('auth.local')}</span>}</div><div className="demo-accounts"><span>{t('auth.demoHint')}</span><div className="demo-account-row"><button type="button" className="demo-account" onClick={() => setUsername('fabricio')}><Avatar name="Fabricio" size="xs" /><span>{t('auth.fabricio')}</span></button><button type="button" className="demo-account" onClick={() => setUsername('maria')}><Avatar name="María" size="xs" /><span>{t('auth.maria')}</span></button></div><p style={{ margin: '10px 0 0', color: '#665d70', fontSize: 9 }}><UserRound size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />{t('auth.credentialsHint')}</p></div></div></section></div>
+  const handleGoogleSignIn = async () => {
+    setError('')
+    setGoogleSubmitting(true)
+    try {
+      await signInWithGoogle()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('auth.invalid'))
+      setGoogleSubmitting(false)
+    }
+  }
+
+  return <div className="login-shell"><section className="login-visual"><Link to="/" className="public-brand" style={{ position: 'absolute', top: 28, left: 'clamp(25px, 7vw, 90px)' }}><span className="brand-mark"><Dumbbell size={16} /></span><strong>train<span>together</span></strong></Link><div className="login-visual-content"><span className="landing-eyebrow"><i />{t('landing.eyebrow')}</span><h1>{t('landing.titleOne')}<br /><span>{t('landing.titleTwo')}</span></h1><p>{t('landing.proof')}</p></div></section><section className="login-form-side"><Link to="/" className="login-back"><ArrowLeft size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />{t('auth.back')}</Link><div className="login-form-wrap"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span className="eyebrow-label">{t('appName')}</span><LanguageSwitcher compact /></div><h2>{t('auth.welcome')}</h2><p>{t('auth.subtitle')}</p><div style={{ marginTop: 20 }}><NeonButton type="button" size="lg" variant="secondary" onClick={handleGoogleSignIn} loading={googleSubmitting}><img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style={{ width: 18, height: 18, marginRight: 8 }} />{t('auth.continueWithGoogle')}</NeonButton></div><div style={{ display: 'flex', alignItems: 'center', gap: 15, margin: '20px 0' }}><hr style={{ flex: 1, border: 'none', borderTop: '1px solid #2e2638' }} /><span style={{ fontSize: 11, color: '#8e829d' }}>{t('common.or')}</span><hr style={{ flex: 1, border: 'none', borderTop: '1px solid #2e2638' }} /></div><form className="login-form" onSubmit={submit}>{error && <div className="login-error" role="alert">{error}</div>}<Field label={t('auth.username')} value={username} onChange={(event) => setUsername(event.target.value)} placeholder={t('auth.usernamePlaceholder')} autoComplete="username" /><Field label={t('auth.password')} type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={t('auth.passwordPlaceholder')} autoComplete="current-password" /><NeonButton type="submit" size="lg" loading={submitting}>{submitting ? t('common.loading') : t('auth.submit')} <LockKeyhole size={15} /></NeonButton></form><div className="login-status"><i />{isSupabaseConfigured ? <StatusPill tone="green">{t('auth.configured')}</StatusPill> : <span>{t('auth.local')}</span>}</div><div className="demo-accounts"><span>{t('auth.demoHint')}</span><div className="demo-account-row"><button type="button" className="demo-account" onClick={() => setUsername('fabricio')}><Avatar name="Fabricio" size="xs" /><span>{t('auth.fabricio')}</span></button><button type="button" className="demo-account" onClick={() => setUsername('maria')}><Avatar name="María" size="xs" /><span>{t('auth.maria')}</span></button></div><p style={{ margin: '10px 0 0', color: '#665d70', fontSize: 9 }}><UserRound size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />{t('auth.credentialsHint')}</p></div></div></section></div>
 }

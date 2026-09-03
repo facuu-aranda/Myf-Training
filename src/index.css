@@ -161,3 +161,24 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 700px) { .manual-layout { grid-template-columns: 1fr; }.manual-day-select { grid-template-columns: 1fr; }.manual-day { display: grid; grid-template-columns: 28px 1fr; align-items: center; column-gap: 9px; }.manual-day small { grid-column: 2; }.manual-day > span { grid-row: span 2; } }
 .rest-entry { width: min(100%, 360px); margin-top: 22px; padding: 13px; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; background: rgba(255,255,255,.025); text-align: left; }.rest-entry > span { display: block; margin-bottom: 10px; color: #998ca5; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }.rest-entry > div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }.rest-entry .field input { height: 38px; padding: 8px 10px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+@media (max-width: 520px) {
+  .page-header-actions { width: 100%; align-items: stretch; flex-direction: column; }
+  .page-header-actions > .neon-button { width: 100%; }
+  .range-tabs { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); overflow: hidden; }
+  .range-tabs button { min-width: 0; padding-right: 4px; padding-left: 4px; font-size: 9px; }
+  .progress-summary { grid-template-columns: 1fr; }
+  .chart-title { flex-direction: column; gap: 8px; }
+  .chart-legend { flex-wrap: wrap; }
+  .chart-card { min-height: 0; overflow: hidden; }
+  .shared-banner { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+  .shared-banner > div:nth-child(2) { min-width: 0; flex: 1; }
+  .shared-banner .couple-avatars { width: 100%; margin-left: 48px; }
+  .household-invitation { align-items: stretch !important; flex-direction: column; gap: 12px; }
+  .household-invitation-actions { width: 100%; }
+  .household-invitation-actions .neon-button { flex: 1; }
+  .couple-person { padding: 16px; }
+  .couple-person-head { align-items: flex-start; }
+  .couple-stat-grid { gap: 6px; }
+  .couple-stat { min-width: 0; padding: 8px; }
+  .couple-stat strong { font-size: 18px; }
+}

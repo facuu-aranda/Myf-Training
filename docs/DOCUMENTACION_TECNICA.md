@@ -320,7 +320,7 @@ El cliente usa OAuth PKCE con `detectSessionInUrl: true`. El redirect de aplicac
 | `/app/nutrition/grocery` | Protegido | `GroceryPage` | Lista de compras compartida. |
 | `/app/nutrition/insights` | Protegido | `NutritionInsightsPage` | Comparación consumo registrado vs. planificado. |
 
-`AppShell` aporta sidebar de escritorio, topbar, indicador de sincronización, menú lateral móvil y navegación inferior móvil. En pantallas de hasta 820px se oculta el sidebar fijo y se utiliza navegación móvil. El topbar móvil queda sticky, se oculta al desplazarse hacia abajo y reaparece al desplazarse hacia arriba.
+`AppShell` aporta sidebar de escritorio, topbar, indicador de sincronización, menú lateral móvil y navegación inferior móvil. En pantallas de hasta 820px se oculta el sidebar fijo y se utiliza navegación móvil. El topbar móvil queda sticky, se oculta al desplazarse hacia abajo y reaparece al desplazarse hacia arriba. En teléfonos, Progress apila sus métricas y adapta rangos/gráficos; Household apila invitaciones, banner y tarjetas de miembros para evitar overflow horizontal.
 
 ---
 

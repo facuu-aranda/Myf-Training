@@ -27,6 +27,7 @@ export interface AIChatRequest {
 }
 
 export interface AIActionProposal {
+  actionId: string
   actionType: AIActionType
   requiresConfirmation: true
   draft: Json

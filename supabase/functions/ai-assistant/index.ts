@@ -62,9 +62,11 @@ async function enrichActionDraft(client: ReturnType<typeof createClient>, action
   return draft
 }
 
-async function confirmAction(client: ReturnType<typeof createClient>, value: unknown) {
+async function confirmAction(client: ReturnType<typeof createClient>, value: unknown, userId: string) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return response({ error: 'invalid_action' }, 422)
-  const proposal = value as { actionType?: unknown; draft?: unknown }
+  const proposal = value as { actionId?: unknown; actionType?: unknown; draft?: unknown }
+  const actionId = typeof proposal.actionId === 'string' ? proposal.actionId : ''
+  if (!/^[0-9a-f-]{36}$/i.test(actionId)) return response({ error: 'invalid_action' }, 422)
   if (proposal.actionType !== 'create_custom_food' || !proposal.draft || typeof proposal.draft !== 'object' || Array.isArray(proposal.draft)) return response({ error: 'action_not_available' }, 422)
   const draft = proposal.draft as Record<string, unknown>
   const name = typeof draft.name === 'string' ? draft.name.trim() : ''
@@ -77,9 +79,21 @@ async function confirmAction(client: ReturnType<typeof createClient>, value: unk
   for (const key of optional) { if (draft[key] !== null && draft[key] !== undefined && (!Number.isFinite(Number(draft[key])) || Number(draft[key]) < 0)) return response({ error: 'invalid_action' }, 422) }
   const optionalValue = (key: string) => draft[key] === null || draft[key] === undefined ? null : Number(draft[key])
   const input = { name, brand: typeof draft.brand === 'string' ? draft.brand.slice(0, 160) : '', category: typeof draft.category === 'string' ? draft.category.slice(0, 100) : '', servingSize, servingUnit, calories, protein: optionalValue('protein'), carbs: optionalValue('carbs'), fat: optionalValue('fat'), fiber: optionalValue('fiber'), sugar: optionalValue('sugar'), sodiumMg: optionalValue('sodiumMg'), saturatedFat: optionalValue('saturatedFat'), notes: typeof draft.notes === 'string' ? draft.notes.slice(0, 1000) : '' }
+  const reservation = await client.from('ai_action_requests').insert({ id: actionId, user_id: userId, action_type: 'create_custom_food', status: 'pending' }).select('status, result').maybeSingle()
+  if (reservation.error && reservation.error.code !== '23505') return response({ error: 'action_execution_error' }, 422)
+  if (reservation.error?.code === '23505') {
+    const existing = await client.from('ai_action_requests').select('status, result').eq('id', actionId).eq('user_id', userId).maybeSingle()
+    if (existing.data?.status === 'executed' && existing.data.result) return response({ ok: true, actionType: 'create_custom_food', ...(existing.data.result as Record<string, unknown>), replay: true })
+    return response({ error: 'action_in_progress' }, 409)
+  }
   const result = await client.rpc('create_custom_food', { input })
-  if (result.error || typeof result.data !== 'string') return response({ error: 'action_execution_error' }, 422)
-  return response({ ok: true, actionType: 'create_custom_food', foodId: result.data })
+  if (result.error || typeof result.data !== 'string') {
+    await client.from('ai_action_requests').update({ status: 'cancelled' }).eq('id', actionId).eq('user_id', userId)
+    return response({ error: 'action_execution_error' }, 422)
+  }
+  const actionResult = { foodId: result.data }
+  await client.from('ai_action_requests').update({ status: 'executed', result: actionResult, executed_at: new Date().toISOString() }).eq('id', actionId).eq('user_id', userId)
+  return response({ ok: true, actionType: 'create_custom_food', ...actionResult })
 }
 
 Deno.serve(async (request) => {
@@ -100,7 +114,7 @@ Deno.serve(async (request) => {
   let body: { message?: unknown; history?: unknown; scopes?: unknown; language?: unknown; confirmAction?: unknown }
   try { body = await request.json() } catch { return response({ error: 'invalid_json' }, 400) }
   if (body.confirmAction !== undefined) {
-    return confirmAction(client, body.confirmAction)
+    return confirmAction(client, body.confirmAction, authData.user.id)
   }
   if (!groqKey) return response({ error: 'provider_unavailable' }, 503)
   const message = typeof body.message === 'string' ? body.message.trim() : ''
@@ -152,7 +166,7 @@ Deno.serve(async (request) => {
           if (!argumentsValue || typeof argumentsValue !== 'object' || Array.isArray(argumentsValue)) return response({ error: 'invalid_tool_arguments' }, 422)
           const draft = await enrichActionDraft(client, name as ActionType, argumentsValue as Record<string, unknown>)
           const proposalMessage = language === 'es' ? 'Preparé un borrador para que lo revises. No se realizaron cambios.' : 'I prepared a draft for your confirmation. No changes were made.'
-          return response({ answer: proposalMessage, action: { actionType: name as ActionType, requiresConfirmation: true, draft }, scopes, date })
+          return response({ answer: proposalMessage, action: { actionId: crypto.randomUUID(), actionType: name as ActionType, requiresConfirmation: true, draft }, scopes, date })
         }
         try {
           const result = await executeReadOnlyTool(name, argumentsValue, { client, userId: authData.user.id, date })

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, BarChart3, BookOpen, CalendarDays, Dumbbell, History, LayoutDashboard, LogOut, Menu, Settings2, Sparkles, Utensils, Users, X, Zap, Search } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, CalendarDays, Dumbbell, History, LayoutDashboard, LogOut, Menu, MessageCircle, Settings2, Sparkles, Utensils, Users, X, Zap, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +18,7 @@ const navItems = [
   { to: '/app/history', key: 'history', icon: History },
   { to: '/app/household', key: 'household', icon: Users },
   { to: '/app/people', key: 'people', icon: Search },
+  { to: '/app/ai', key: 'assistant', icon: MessageCircle },
   { to: '/app/exercises', key: 'exercises', icon: BookOpen },
 ]
 const mobileNavItems = navItems.filter(({ key }) => ['overview', 'live', 'nutrition', 'progress', 'household'].includes(key))

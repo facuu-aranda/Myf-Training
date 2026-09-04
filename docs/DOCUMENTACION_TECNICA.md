@@ -37,6 +37,7 @@ La aplicación está construida como un frontend React servido por Vite. Supabas
 - Diseño responsive para escritorio y móvil.
 - Catálogo nutricional de 8.753 alimentos de TACO y USDA con traducciones persistidas.
 - Recipes, Food Log (food/recipe), Meal Planner, Grocery List e Insights nutricionales.
+- AI Assistant escrito con provider Groq server-side, contextos seleccionables, tools de lectura y agregados nutricionales deterministas.
 
 ---
 
@@ -155,6 +156,14 @@ MyF-Training/
 │   ├── lib/
 │   │   ├── analytics.ts
 │   │   ├── auth.ts
+│   │   ├── ai/
+│   │   │   ├── client.ts
+│   │   │   ├── context.ts
+│   │   │   ├── errors.ts
+│   │   │   ├── prompts.ts
+│   │   │   ├── provider.ts
+│   │   │   └── types.ts
+│   │   ├── custom-food.ts
 │   │   ├── food.ts
 │   │   ├── grocery.ts
 │   │   ├── household.ts
@@ -165,6 +174,7 @@ MyF-Training/
 │   │   ├── repository.ts
 │   │   ├── storage.ts
 │   │   ├── supabase.ts
+│   │   ├── workout-builder.ts
 │   │   └── utils.ts
 │   ├── layouts/
 │   │   └── AppShell.tsx
@@ -195,6 +205,7 @@ MyF-Training/
 │       ├── OnboardingPage.tsx
 │       ├── ExerciseLibraryPage.tsx
 │       ├── ProfilePage.tsx
+│       ├── AIPage.tsx
 │       ├── FoodLibraryPage.tsx
 │       ├── FoodLogPage.tsx
 │       ├── GroceryPage.tsx
@@ -313,6 +324,7 @@ El cliente usa OAuth PKCE con `detectSessionInUrl: true`. El redirect de aplicac
 | `/app/people/:handle` | Protegido | `PublicProfilePage` | Perfil público, Follow e invitación a household. |
 | `/app/exercises` | Protegido | `ExerciseLibraryPage` | Búsqueda y consulta de ejercicios. |
 | `/app/profile` | Protegido | `ProfilePage` | Perfil, metas, métricas del día, idioma y logout. |
+| `/app/ai` | Protegido | `AIPage` | Chat escrito con contextos seleccionables; todavía no ejecuta mutaciones. |
 | `/app/nutrition/foods` | Protegido | `FoodLibraryPage` | Catálogo global de alimentos. |
 | `/app/nutrition/recipes` | Protegido | `RecipesPage` | Creación y edición de recetas. |
 | `/app/nutrition/log` | Protegido | `FoodLogPage` | Registro diario de alimentos consumidos (Food Log). |

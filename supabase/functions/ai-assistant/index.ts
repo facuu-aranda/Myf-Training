@@ -62,6 +62,26 @@ async function enrichActionDraft(client: ReturnType<typeof createClient>, action
   return draft
 }
 
+async function confirmAction(client: ReturnType<typeof createClient>, value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return response({ error: 'invalid_action' }, 422)
+  const proposal = value as { actionType?: unknown; draft?: unknown }
+  if (proposal.actionType !== 'create_custom_food' || !proposal.draft || typeof proposal.draft !== 'object' || Array.isArray(proposal.draft)) return response({ error: 'action_not_available' }, 422)
+  const draft = proposal.draft as Record<string, unknown>
+  const name = typeof draft.name === 'string' ? draft.name.trim() : ''
+  const servingSize = typeof draft.servingSize === 'number' ? draft.servingSize : Number(draft.servingSize)
+  const calories = typeof draft.calories === 'number' ? draft.calories : Number(draft.calories)
+  const servingUnit = typeof draft.servingUnit === 'string' ? draft.servingUnit : ''
+  const optional = ['protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodiumMg', 'saturatedFat']
+  const units = ['g', 'kg', 'mg', 'ml', 'l', 'unit', 'cup', 'tablespoon', 'teaspoon', 'slice', 'portion', 'piece']
+  if (!name || name.length > 160 || !Number.isFinite(servingSize) || servingSize <= 0 || !Number.isFinite(calories) || calories < 0 || !units.includes(servingUnit)) return response({ error: 'invalid_action' }, 422)
+  for (const key of optional) { if (draft[key] !== null && draft[key] !== undefined && (!Number.isFinite(Number(draft[key])) || Number(draft[key]) < 0)) return response({ error: 'invalid_action' }, 422) }
+  const optionalValue = (key: string) => draft[key] === null || draft[key] === undefined ? null : Number(draft[key])
+  const input = { name, brand: typeof draft.brand === 'string' ? draft.brand.slice(0, 160) : '', category: typeof draft.category === 'string' ? draft.category.slice(0, 100) : '', servingSize, servingUnit, calories, protein: optionalValue('protein'), carbs: optionalValue('carbs'), fat: optionalValue('fat'), fiber: optionalValue('fiber'), sugar: optionalValue('sugar'), sodiumMg: optionalValue('sodiumMg'), saturatedFat: optionalValue('saturatedFat'), notes: typeof draft.notes === 'string' ? draft.notes.slice(0, 1000) : '' }
+  const result = await client.rpc('create_custom_food', { input })
+  if (result.error || typeof result.data !== 'string') return response({ error: 'action_execution_error' }, 422)
+  return response({ ok: true, actionType: 'create_custom_food', foodId: result.data })
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (request.method !== 'POST') return response({ error: 'method_not_allowed' }, 405)
@@ -72,14 +92,17 @@ Deno.serve(async (request) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
   if (!token || !supabaseUrl || !supabaseAnonKey) return response({ error: 'unauthorized' }, 401)
-  if (!groqKey) return response({ error: 'provider_unavailable' }, 503)
 
   const client = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false, autoRefreshToken: false } })
   const { data: authData, error: authError } = await client.auth.getUser(token)
   if (authError || !authData.user) return response({ error: 'unauthorized' }, 401)
 
-  let body: { message?: unknown; history?: unknown; scopes?: unknown; language?: unknown }
+  let body: { message?: unknown; history?: unknown; scopes?: unknown; language?: unknown; confirmAction?: unknown }
   try { body = await request.json() } catch { return response({ error: 'invalid_json' }, 400) }
+  if (body.confirmAction !== undefined) {
+    return confirmAction(client, body.confirmAction)
+  }
+  if (!groqKey) return response({ error: 'provider_unavailable' }, 503)
   const message = typeof body.message === 'string' ? body.message.trim() : ''
   if (!message || message.length > 4000) return response({ error: 'invalid_message' }, 400)
   const history = Array.isArray(body.history) ? body.history.filter(validMessage).slice(-10) : []

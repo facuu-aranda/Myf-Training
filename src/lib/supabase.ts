@@ -44,6 +44,7 @@ export function subscribeToNutritionChanges(onChange: () => void) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'planned_meals' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'grocery_lists' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'grocery_list_items' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'foods' }, onChange)
     .subscribe()
   return () => {
     void supabase.removeChannel(channel)

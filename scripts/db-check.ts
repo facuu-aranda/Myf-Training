@@ -21,6 +21,7 @@ async function main() {
   const requiredColumns: Array<[string, string]> = [
     ['profiles', 'id, public_handle, public_code, discoverable, profile_visibility, progress_visibility'],
     ['recipes', 'id, household_id'],
+    ['foods', 'id, source_id, owner_user_id, source_type, archived_at'],
     ['food_logs', 'id, household_id, visibility'],
     ['meal_plans', 'id, household_id'],
     ['grocery_lists', 'id, household_id'],
@@ -36,6 +37,9 @@ async function main() {
   if (profileRlsCheck.error) throw new Error(`profiles RLS: ${profileRlsCheck.error.message}. Apply the household RLS fix migration.`)
   const publicProfilesCheck = await publicClient.from('public_profiles').select('id, public_handle, public_code').limit(1)
   if (publicProfilesCheck.error) throw new Error(`public profiles: ${publicProfilesCheck.error.message}. Check the public profile grant/view.`)
+  const customSource = await admin.from('food_sources').select('id').eq('source_key', 'user-custom').maybeSingle()
+  if (customSource.error) throw new Error(`custom food source: ${customSource.error.message}`)
+  if (!customSource.data) throw new Error('Custom food source is missing. Apply 20260903100000_custom_foods_private.sql.')
   const translationResult = await admin.from('foods').select('id', { count: 'exact', head: true }).not('name_es', 'is', null).neq('name_es', '').not('name_en', 'is', null).neq('name_en', '')
   if (translationResult.error) throw new Error(`food translations: ${translationResult.error.message}`)
   const translatedFoods = translationResult.count ?? 0
@@ -47,8 +51,8 @@ async function main() {
   if (results.profiles < 2 || results.households < 1 || results.household_members < 2 || results.exercises < 1) throw new Error('Database is connected but initial seed data is incomplete. Run yarn seed.')
   if (results.foods < 1 || results.food_nutrients < 1 || results.food_portions < 1) throw new Error('Nutrition foundation is connected but the food catalog is incomplete. Run yarn seed:foods.')
   if (translatedFoods < results.foods) throw new Error('Some foods are missing Spanish or English names. Run yarn seed:foods.')
-  const missingNutritionRealtime = ['food_logs', 'food_log_items', 'meal_plans', 'meal_plan_days', 'planned_meals', 'grocery_lists', 'grocery_list_items', 'households', 'household_members', 'household_invitations', 'profile_follows'].filter((table) => !realtimeTables.includes(table))
-  if (missingNutritionRealtime.length) throw new Error(`Nutrition Realtime is missing: ${missingNutritionRealtime.join(', ')}. Apply the latest nutrition migration.`)
+  const missingNutritionRealtime = ['foods', 'food_logs', 'food_log_items', 'meal_plans', 'meal_plan_days', 'planned_meals', 'grocery_lists', 'grocery_list_items', 'households', 'household_members', 'household_invitations', 'profile_follows'].filter((table) => !realtimeTables.includes(table))
+  if (missingNutritionRealtime.length) throw new Error(`Nutrition/Social Realtime is missing: ${missingNutritionRealtime.join(', ')}. Apply the latest migration.`)
   console.log('Database check passed.')
 }
 void main().catch((error: unknown) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1 })

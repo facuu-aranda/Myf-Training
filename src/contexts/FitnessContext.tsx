@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { demoState } from '../data/demo'
 import { getDateKey, uid } from '../lib/utils'
+import { templateNames, templateWeekdays } from '../lib/workout-builder'
 import { isSupabaseConfigured, subscribeToFitnessChanges } from '../lib/supabase'
 import { STORAGE_KEY, readStorage, writeStorage } from '../lib/storage'
 import { loadRemoteState, persistEvent, persistMetric, persistNutrition, persistProfile, persistRecord, persistSession, persistSet, persistWorkoutDay, persistWorkoutExercise, deleteRemoteWorkoutDay, deleteRemoteWorkoutExercise, deleteRemoteSet } from '../lib/repository'
@@ -16,7 +17,11 @@ export interface FitnessContextValue extends AppState {
   updateWorkoutDay: (dayId: string, patch: Partial<WorkoutDay>) => void
   removeWorkoutDay: (dayId: string) => void
   reorderWorkoutDays: (userId: string, dayIds: string[]) => void
+  duplicateWorkoutDay: (userId: string, dayId: string) => void
+  createWorkoutTemplate: (userId: string, dayCount: 3 | 4 | 5) => void
   addExerciseToDay: (dayId: string, exerciseId: string) => void
+  reorderWorkoutExercises: (dayId: string, exerciseIds: string[]) => void
+  duplicateWorkoutExercise: (dayId: string, exercisePlanId: string) => void
   updateWorkoutExercise: (exercisePlanId: string, patch: Partial<WorkoutExercise>) => void
   removeExerciseFromDay: (exercisePlanId: string) => void
   startSession: (userId: string, workoutDayId: string) => string
@@ -128,12 +133,50 @@ export function FitnessProvider({ children }: { children: ReactNode }) {
     nextDays.filter((day) => day.userId === userId).forEach((day) => fireRemote(persistWorkoutDay(day)))
   }, [commit, state.workoutDays])
 
+  const duplicateWorkoutDay = useCallback((userId: string, dayId: string) => {
+    const source = state.workoutDays.find((day) => day.id === dayId && day.userId === userId)
+    if (!source) return
+    const now = new Date().toISOString()
+    const userDays = state.workoutDays.filter((day) => day.userId === userId)
+    const duplicateId = uid('day')
+    const duplicate: WorkoutDay = { ...source, id: duplicateId, name: `${source.name} copy`, nameEs: `${source.nameEs} copia`, orderIndex: userDays.length, exercises: source.exercises.map((plan, index) => ({ ...plan, id: uid('plan'), workoutDayId: duplicateId, orderIndex: index })), createdAt: now, updatedAt: now }
+    commit((current) => ({ ...current, workoutDays: [...current.workoutDays, duplicate] }))
+    fireRemote(persistWorkoutDay(duplicate))
+    duplicate.exercises.forEach((plan) => fireRemote(persistWorkoutExercise(plan)))
+  }, [commit, state.workoutDays])
+
+  const createWorkoutTemplate = useCallback((userId: string, dayCount: 3 | 4 | 5) => {
+    const now = new Date().toISOString()
+    const weekdays = templateWeekdays(dayCount)
+    const names = templateNames(dayCount)
+    const days = weekdays.map((weekday, index) => ({ id: uid('day'), userId, name: names[index][0], nameEs: names[index][1], description: '', weekday, orderIndex: index, active: true, estimatedMinutes: 45, exercises: [], createdAt: now, updatedAt: now }))
+    commit((current) => ({ ...current, workoutDays: [...current.workoutDays, ...days] }))
+    days.forEach((day) => fireRemote(persistWorkoutDay(day)))
+  }, [commit])
+
   const addExerciseToDay = useCallback((dayId: string, exerciseId: string) => {
     const day = state.workoutDays.find((item) => item.id === dayId)
     if (!day) return
     const plan: WorkoutExercise = { id: uid('plan'), workoutDayId: dayId, exerciseId, orderIndex: day.exercises.length, sets: 3, targetReps: 10, targetWeight: 0, restSeconds: 60, notes: '' }
     commit((current) => ({ ...current, workoutDays: current.workoutDays.map((item) => item.id === dayId ? { ...item, exercises: [...item.exercises, plan], updatedAt: new Date().toISOString() } : item) }))
     fireRemote(persistWorkoutExercise(plan))
+  }, [commit, state.workoutDays])
+
+  const reorderWorkoutExercises = useCallback((dayId: string, exerciseIds: string[]) => {
+    const day = state.workoutDays.find((item) => item.id === dayId)
+    if (!day) return
+    const nextExercises = day.exercises.map((plan) => ({ ...plan, orderIndex: Math.max(0, exerciseIds.indexOf(plan.id)) })).sort((left, right) => left.orderIndex - right.orderIndex)
+    commit((current) => ({ ...current, workoutDays: current.workoutDays.map((item) => item.id === dayId ? { ...item, exercises: nextExercises, updatedAt: new Date().toISOString() } : item) }))
+    nextExercises.forEach((plan) => fireRemote(persistWorkoutExercise(plan)))
+  }, [commit, state.workoutDays])
+
+  const duplicateWorkoutExercise = useCallback((dayId: string, exercisePlanId: string) => {
+    const day = state.workoutDays.find((item) => item.id === dayId)
+    const source = day?.exercises.find((plan) => plan.id === exercisePlanId)
+    if (!day || !source) return
+    const duplicate: WorkoutExercise = { ...source, id: uid('plan'), orderIndex: day.exercises.length }
+    commit((current) => ({ ...current, workoutDays: current.workoutDays.map((item) => item.id === dayId ? { ...item, exercises: [...item.exercises, duplicate], updatedAt: new Date().toISOString() } : item) }))
+    fireRemote(persistWorkoutExercise(duplicate))
   }, [commit, state.workoutDays])
 
   const updateWorkoutExercise = useCallback((exercisePlanId: string, patch: Partial<WorkoutExercise>) => {
@@ -145,9 +188,11 @@ export function FitnessProvider({ children }: { children: ReactNode }) {
   }, [commit, state.workoutDays])
 
   const removeExerciseFromDay = useCallback((exercisePlanId: string) => {
+    const remaining = state.workoutDays.flatMap((day) => day.exercises.filter((plan) => plan.id !== exercisePlanId).map((plan, index) => ({ ...plan, orderIndex: index })))
     commit((current) => ({ ...current, workoutDays: current.workoutDays.map((day) => ({ ...day, exercises: day.exercises.filter((plan) => plan.id !== exercisePlanId).map((plan, index) => ({ ...plan, orderIndex: index })) })) }))
     fireRemote(deleteRemoteWorkoutExercise(exercisePlanId))
-  }, [commit])
+    remaining.forEach((plan) => fireRemote(persistWorkoutExercise(plan)))
+  }, [commit, state.workoutDays])
 
   const startSession = useCallback((userId: string, workoutDayId: string) => {
     const currentActive = state.sessions.find((session) => session.userId === userId && session.status === 'active')
@@ -226,7 +271,7 @@ export function FitnessProvider({ children }: { children: ReactNode }) {
     fireRemote(persistMetric(next))
   }, [commit, state.dailyMetrics])
 
-  const value = useMemo<FitnessContextValue>(() => ({ ...state, isRealtimeConnected, lastSyncedAt, refreshFromRemote, updateProfile, updateNutrition, addWorkoutDay, updateWorkoutDay, removeWorkoutDay, reorderWorkoutDays, addExerciseToDay, updateWorkoutExercise, removeExerciseFromDay, startSession, getActiveSession, recordSet, removeSet, saveQuickSession, completeSession, abandonSession, updateDailyMetric }), [abandonSession, addExerciseToDay, addWorkoutDay, completeSession, getActiveSession, isRealtimeConnected, lastSyncedAt, recordSet, removeSet, saveQuickSession, refreshFromRemote, removeExerciseFromDay, removeWorkoutDay, reorderWorkoutDays, startSession, state, updateDailyMetric, updateNutrition, updateProfile, updateWorkoutDay, updateWorkoutExercise])
+  const value = useMemo<FitnessContextValue>(() => ({ ...state, isRealtimeConnected, lastSyncedAt, refreshFromRemote, updateProfile, updateNutrition, addWorkoutDay, updateWorkoutDay, removeWorkoutDay, reorderWorkoutDays, duplicateWorkoutDay, createWorkoutTemplate, addExerciseToDay, reorderWorkoutExercises, duplicateWorkoutExercise, updateWorkoutExercise, removeExerciseFromDay, startSession, getActiveSession, recordSet, removeSet, saveQuickSession, completeSession, abandonSession, updateDailyMetric }), [abandonSession, addExerciseToDay, addWorkoutDay, completeSession, getActiveSession, isRealtimeConnected, lastSyncedAt, recordSet, removeSet, saveQuickSession, refreshFromRemote, removeExerciseFromDay, removeWorkoutDay, reorderWorkoutDays, duplicateWorkoutDay, createWorkoutTemplate, reorderWorkoutExercises, duplicateWorkoutExercise, startSession, state, updateDailyMetric, updateNutrition, updateProfile, updateWorkoutDay, updateWorkoutExercise])
 
   return <FitnessContext.Provider value={value}>{children}</FitnessContext.Provider>
 }

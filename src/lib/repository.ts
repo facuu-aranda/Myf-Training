@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
-import type { AppState, DailyMetric, Exercise, ExerciseSet, Food, FoodLog, FoodLogItem, FoodLogVisibility, FoodNutrition, FoodPortion, FoodPrecision, FoodSource, GroceryItemCategory, GroceryItemSource, GroceryItemStatus, GroceryList, GroceryListItem, GroceryListStatus, GroceryPurchaseUnit, MealPlan, MealPlanDay, MealPlanVisibility, MealType, NutritionPlan, PersonalRecord, PlannedMeal, PlannedMealStatus, Profile, Recipe, RecipeIngredient, RecipeVisibility, WorkoutDay, WorkoutExercise, WorkoutSession } from '../types'
+import { validateCustomFoodInput } from './custom-food'
+import type { AppState, CreateCustomFoodInput, DailyMetric, Exercise, ExerciseSet, Food, FoodLog, FoodLogItem, FoodLogVisibility, FoodNutrition, FoodPortion, FoodPrecision, FoodSource, GroceryItemCategory, GroceryItemSource, GroceryItemStatus, GroceryList, GroceryListItem, GroceryListStatus, GroceryPurchaseUnit, MealPlan, MealPlanDay, MealPlanVisibility, MealType, NutritionPlan, PersonalRecord, PlannedMeal, PlannedMealStatus, Profile, Recipe, RecipeIngredient, RecipeVisibility, WorkoutDay, WorkoutExercise, WorkoutSession } from '../types'
 
 interface Row { [key: string]: unknown }
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -66,7 +67,7 @@ function foodPortionFromRow(row: Row): FoodPortion {
 function foodFromRow(row: Row): Food {
   const sourceRow = firstRow(row.food_sources)
   const metadata = (row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata) ? row.metadata : {}) as Food['metadata']
-  return { id: stringValue(row.id), sourceId: stringValue(row.source_id), externalId: stringValue(row.external_id), name: stringValue(row.name), nameEs: stringValue(row.name_es, stringValue(row.name)), nameEn: stringValue(row.name_en, stringValue(row.name)), description: stringValue(row.description), category: stringValue(row.category), categoryEs: stringValue(metadata.category_es, stringValue(row.category)), categoryEn: stringValue(metadata.category_en, stringValue(row.category)), subcategory: stringValue(row.subcategory), subcategoryEs: stringValue(metadata.preparation_es, stringValue(row.subcategory)), subcategoryEn: stringValue(metadata.preparation_en, stringValue(row.subcategory)), foodGroup: stringValue(row.food_group), brand: stringValue(row.brand), barcode: stringValue(row.barcode), defaultUnit: stringValue(row.default_unit, 'g') as Food['defaultUnit'], isBasicFood: booleanValue(row.is_basic_food, true), isPackaged: booleanValue(row.is_packaged), metadata, source: sourceRow ? foodSourceFromRow(sourceRow) : undefined, nutrients: rows(row.food_nutrients).map(foodNutritionFromRow), portions: rows(row.food_portions).map(foodPortionFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
+  return { id: stringValue(row.id), sourceId: stringValue(row.source_id), externalId: stringValue(row.external_id), sourceType: stringValue(row.source_type, 'system') as Food['sourceType'], ownerUserId: typeof row.owner_user_id === 'string' ? row.owner_user_id : undefined, archivedAt: typeof row.archived_at === 'string' ? row.archived_at : null, name: stringValue(row.name), nameEs: stringValue(row.name_es, stringValue(row.name)), nameEn: stringValue(row.name_en, stringValue(row.name)), description: stringValue(row.description), category: stringValue(row.category), categoryEs: stringValue(metadata.category_es, stringValue(row.category)), categoryEn: stringValue(metadata.category_en, stringValue(row.category)), subcategory: stringValue(row.subcategory), subcategoryEs: stringValue(metadata.preparation_es, stringValue(row.subcategory)), subcategoryEn: stringValue(metadata.preparation_en, stringValue(row.subcategory)), foodGroup: stringValue(row.food_group), brand: stringValue(row.brand), barcode: stringValue(row.barcode), defaultUnit: stringValue(row.default_unit, 'g') as Food['defaultUnit'], isBasicFood: booleanValue(row.is_basic_food, true), isPackaged: booleanValue(row.is_packaged), metadata, source: sourceRow ? foodSourceFromRow(sourceRow) : undefined, nutrients: rows(row.food_nutrients).map(foodNutritionFromRow), portions: rows(row.food_portions).map(foodPortionFromRow), createdAt: stringValue(row.created_at), updatedAt: stringValue(row.updated_at) }
 }
 
 function recipeIngredientFromRow(row: Row): RecipeIngredient {
@@ -115,19 +116,21 @@ function groceryListFromRow(row: Row): GroceryList {
 
 const FOOD_SELECT = '*, food_sources(*), food_nutrients(*), food_portions(*)'
 
-export async function loadFoods(options: { search?: string; limit?: number; offset?: number } = {}): Promise<Food[]> {
+export async function loadFoods(options: { search?: string; limit?: number; offset?: number; scope?: 'all' | 'global' | 'mine' } = {}): Promise<Food[]> {
   if (!supabase) return []
   const limit = Math.min(Math.max(options.limit ?? 60, 1), 100)
   const offset = Math.max(options.offset ?? 0, 0)
   const search = options.search?.trim().replace(/[,%()]/g, ' ') || ''
-  const result = await supabase.rpc('search_foods_ranked', { search_term: search, limit_count: limit, offset_count: offset }).select(FOOD_SELECT)
+  const result = await supabase.rpc('search_foods_ranked', { search_term: search, limit_count: limit, offset_count: offset, scope_filter: options.scope ?? 'all' }).select(FOOD_SELECT)
   if (result.error) throw result.error
   return rows(result.data).map(foodFromRow)
 }
 
-export async function countFoods(search = ''): Promise<number> {
-  if (!supabase) return 0
-  let query = supabase.from('foods').select('id', { count: 'exact', head: true })
+export async function countFoods(search = '', scope: 'all' | 'global' | 'mine' = 'all', userId?: string): Promise<number> {
+  if (!supabase || (scope === 'mine' && !userId)) return 0
+  let query = supabase.from('foods').select('id', { count: 'exact', head: true }).is('archived_at', null)
+  if (scope === 'global') query = query.eq('source_type', 'system')
+  if (scope === 'mine' && userId) query = query.eq('owner_user_id', userId)
   const sanitized = search.trim().replace(/[,%()]/g, ' ')
   if (sanitized) {
     const term = `%${sanitized}%`
@@ -140,6 +143,42 @@ export async function countFoods(search = ''): Promise<number> {
 
 export async function searchFoods(search: string, limit = 60): Promise<Food[]> {
   return loadFoods({ search, limit })
+}
+
+export async function loadFood(foodId: string): Promise<Food | null> {
+  if (!supabase || !foodId) return null
+  const result = await supabase.from('foods').select(FOOD_SELECT).eq('id', foodId).maybeSingle()
+  if (result.error) throw result.error
+  return result.data ? foodFromRow(result.data) : null
+}
+
+export async function createCustomFood(input: CreateCustomFoodInput): Promise<Food> {
+  const validationError = validateCustomFoodInput(input)
+  if (validationError) throw new Error(validationError)
+  if (!supabase) throw new Error('Supabase is not configured')
+  const result = await supabase.rpc('create_custom_food', { input: { ...input, name: input.name.trim() } })
+  if (result.error || typeof result.data !== 'string') throw result.error ?? new Error('Could not create custom food')
+  const food = await loadFood(result.data)
+  if (!food) throw new Error('Created custom food could not be loaded')
+  return food
+}
+
+export async function updateCustomFood(foodId: string, input: CreateCustomFoodInput): Promise<Food> {
+  const validationError = validateCustomFoodInput(input)
+  if (validationError) throw new Error(validationError)
+  if (!supabase || !foodId) throw new Error('Supabase is not configured')
+  const result = await supabase.rpc('update_custom_food', { p_food_id: foodId, input: { ...input, name: input.name.trim() } })
+  if (result.error || result.data !== true) throw result.error ?? new Error('Could not update custom food')
+  const food = await loadFood(foodId)
+  if (!food) throw new Error('Updated custom food could not be loaded')
+  return food
+}
+
+export async function archiveCustomFood(foodId: string): Promise<void> {
+  if (!supabase) return
+  const result = await supabase.rpc('archive_custom_food', { p_food_id: foodId })
+  if (result.error) throw result.error
+  if (result.data !== true) throw new Error('Could not archive custom food')
 }
 
 export async function loadFoodFavoriteIds(userId: string): Promise<string[]> {

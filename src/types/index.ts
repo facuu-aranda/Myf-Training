@@ -12,6 +12,25 @@ export type ActivityEventType =
   | 'metric_updated'
 
 export type NutritionBasis = 'per_100g' | 'per_100ml' | 'per_unit'
+export type FoodSourceType = 'system' | 'user'
+
+export interface CreateCustomFoodInput {
+  name: string
+  brand?: string
+  category?: string
+  servingSize: number
+  servingUnit: FoodUnit
+  calories: number
+  protein?: number | null
+  carbs?: number | null
+  fat?: number | null
+  fiber?: number | null
+  sugar?: number | null
+  sodiumMg?: number | null
+  saturatedFat?: number | null
+  notes?: string
+}
+
 export type FoodUnit = 'g' | 'kg' | 'mg' | 'ml' | 'l' | 'unit' | 'cup' | 'tablespoon' | 'teaspoon' | 'slice' | 'portion' | 'piece'
 
 export interface FoodSource {
@@ -62,6 +81,9 @@ export interface Food {
   id: string
   sourceId: string
   externalId: string
+  sourceType: FoodSourceType
+  ownerUserId?: string
+  archivedAt?: string | null
   name: string
   nameEs: string
   nameEn: string

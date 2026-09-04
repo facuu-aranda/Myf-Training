@@ -9,7 +9,7 @@ type HouseholdMemberRow = { household_id: string; user_id: string; role: 'owner'
 type HouseholdInvitationRow = { id: string; household_id: string; inviter_user_id: string; invitee_user_id: string | null; token_hash: string | null; status: 'pending' | 'accepted' | 'expired' | 'revoked' | 'declined'; expires_at: string; accepted_at: string | null; revoked_at: string | null; created_at: string }
 type ProfileFollowRow = { id: string; follower_id: string; followed_id: string; status: 'pending' | 'accepted' | 'rejected' | 'blocked'; created_at: string; updated_at: string; accepted_at: string | null }
 type FoodSourceRow = { id: string; source_key: string; name: string; source_url: string; license: string; attribution: string; imported_at: string; metadata: Json; created_at: string; updated_at: string }
-type FoodRow = { id: string; source_id: string; external_id: string; name: string; name_es: string; name_en: string | null; description: string; category: string; subcategory: string; food_group: string; brand: string | null; barcode: string | null; default_unit: string; is_basic_food: boolean; is_packaged: boolean; metadata: Json; created_at: string; updated_at: string }
+type FoodRow = { id: string; source_id: string; external_id: string; name: string; name_es: string; name_en: string | null; description: string; category: string; subcategory: string; food_group: string; brand: string | null; barcode: string | null; default_unit: string; is_basic_food: boolean; is_packaged: boolean; metadata: Json; owner_user_id: string | null; source_type: 'system' | 'user'; archived_at: string | null; created_at: string; updated_at: string }
 type FoodNutrientsRow = { id: string; food_id: string; basis: 'per_100g' | 'per_100ml' | 'per_unit'; calories: number | null; protein_g: number | null; carbohydrates_g: number | null; fat_g: number | null; fiber_g: number | null; saturated_fat_g: number | null; sugar_g: number | null; sodium_mg: number | null; cholesterol_mg: number | null; micronutrients: Json; created_at: string; updated_at: string }
 type FoodPortionRow = { id: string; food_id: string; label: string; unit: string; grams: number | null; ml: number | null; is_default: boolean; metadata: Json; created_at: string; updated_at: string }
 type FoodFavoriteRow = { user_id: string; food_id: string; created_at: string }
@@ -79,6 +79,10 @@ export interface Database {
       is_same_household_user: { Args: { target_user_id: string; viewer_user_id?: string }; Returns: boolean }
       search_public_profiles: { Args: { search_query: string; result_limit: number }; Returns: Json }
       add_household_member: { Args: { p_household_id: string; p_user_id: string; p_role: string }; Returns: boolean }
+      search_foods_ranked: { Args: { search_term: string; limit_count: number; offset_count: number; scope_filter?: string }; Returns: FoodRow[] }
+      create_custom_food: { Args: { input: Json }; Returns: string }
+      update_custom_food: { Args: { p_food_id: string; input: Json }; Returns: boolean }
+      archive_custom_food: { Args: { p_food_id: string }; Returns: boolean }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

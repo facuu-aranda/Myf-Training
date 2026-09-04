@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { countFoods, loadFoodFavoriteIds, loadFoods, setFoodFavorite } from '../lib/repository'
+
+export type FoodLibraryScope = 'all' | 'global' | 'mine'
 import type { Food } from '../types'
 
 const PAGE_SIZE = 60
 
-export function useFoodLibrary(userId?: string) {
+export function useFoodLibrary(userId?: string, scope: FoodLibraryScope = 'all') {
   const [foods, setFoods] = useState<Food[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => new Set())
@@ -18,7 +20,7 @@ export function useFoodLibrary(userId?: string) {
     setIsLoading(true)
     setError('')
     try {
-      const [nextFoods, nextTotal] = await Promise.all([loadFoods({ search: searchValue, limit: PAGE_SIZE, offset: 0 }), countFoods(searchValue)])
+      const [nextFoods, nextTotal] = await Promise.all([loadFoods({ search: searchValue, limit: PAGE_SIZE, offset: 0, scope }), countFoods(searchValue, scope, userId)])
       setFoods(nextFoods)
       setTotalCount(nextTotal)
       setHasMore(nextFoods.length < nextTotal)
@@ -27,7 +29,7 @@ export function useFoodLibrary(userId?: string) {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [scope, userId])
 
   useEffect(() => { const timer = window.setTimeout(() => { void refresh(search) }, 180); return () => window.clearTimeout(timer) }, [refresh, search])
 
@@ -42,7 +44,7 @@ export function useFoodLibrary(userId?: string) {
     if (isLoading || isLoadingMore || !hasMore) return
     setIsLoadingMore(true)
     try {
-      const nextFoods = await loadFoods({ search, limit: PAGE_SIZE, offset: foods.length })
+      const nextFoods = await loadFoods({ search, limit: PAGE_SIZE, offset: foods.length, scope })
       setFoods((current) => [...current, ...nextFoods])
       setHasMore(foods.length + nextFoods.length < totalCount)
     } catch {
@@ -50,7 +52,7 @@ export function useFoodLibrary(userId?: string) {
     } finally {
       setIsLoadingMore(false)
     }
-  }, [foods.length, hasMore, isLoading, isLoadingMore, search, totalCount])
+  }, [foods.length, hasMore, isLoading, isLoadingMore, scope, search, totalCount])
 
   const toggleFavorite = useCallback(async (foodId: string) => {
     if (!userId) return

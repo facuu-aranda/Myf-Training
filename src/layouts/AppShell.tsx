@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, BarChart3, BookOpen, CalendarDays, Dumbbell, History, LayoutDashboard, LogOut, Menu, MessageCircle, Settings2, Sparkles, Utensils, Users, X, Zap, Search } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, BriefcaseBusiness, CalendarDays, Dumbbell, History, LayoutDashboard, LogOut, Menu, MessageCircle, Settings2, Sparkles, Utensils, Users, X, Zap, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useFitness } from '../hooks/useFitness'
+import { hasCoachingCapability } from '../lib/coaching-space'
 import { Avatar, IconButton, StatusPill } from '../components/ui'
 import { cn } from '../lib/utils'
 
@@ -19,6 +20,7 @@ const navItems = [
   { to: '/app/household', key: 'household', icon: Users },
   { to: '/app/people', key: 'people', icon: Search },
   { to: '/app/ai', key: 'assistant', icon: MessageCircle },
+  { to: '/app/coach', key: 'coach', icon: BriefcaseBusiness },
   { to: '/app/exercises', key: 'exercises', icon: BookOpen },
 ]
 const mobileNavItems = navItems.filter(({ key }) => ['overview', 'live', 'nutrition', 'progress', 'household'].includes(key))
@@ -29,6 +31,7 @@ export function AppShell() {
   const { isRealtimeConnected } = useFitness()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [topbarVisible, setTopbarVisible] = useState(true)
+  const [coachingEnabled, setCoachingEnabled] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
@@ -42,13 +45,21 @@ export function AppShell() {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-  const current = navItems.find((item) => item.end ? location.pathname === item.to : location.pathname.startsWith(item.to))
+
+  useEffect(() => {
+    let active = true
+    void hasCoachingCapability().then((enabled) => { if (active) setCoachingEnabled(enabled) })
+    return () => { active = false }
+  }, [])
+
+  const visibleNavItems = coachingEnabled ? navItems : navItems.filter((item) => item.key !== 'coach')
+  const current = visibleNavItems.find((item) => item.end ? location.pathname === item.to : location.pathname.startsWith(item.to))
 
   if (!user) return null
 
   const navigation = <>
     <div className="sidebar-brand"><span className="brand-mark"><Dumbbell size={17} /></span><span className="brand-name">train<span>together</span></span></div>
-    <div className="sidebar-section"><span className="sidebar-label">{t('common.workspace')}</span>{navItems.map(({ to, key, icon: Icon, end }) => <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('nav-item', isActive && 'nav-item-active')} onClick={() => setMobileNavOpen(false)}><Icon size={17} strokeWidth={1.8} /><span>{t(`nav.${key}`)}</span>{key === 'live' && <i className="nav-live-dot" />}</NavLink>)}</div>
+    <div className="sidebar-section"><span className="sidebar-label">{t('common.workspace')}</span>{visibleNavItems.map(({ to, key, icon: Icon, end }) => <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('nav-item', isActive && 'nav-item-active')} onClick={() => setMobileNavOpen(false)}><Icon size={17} strokeWidth={1.8} /><span>{t(`nav.${key}`)}</span>{key === 'live' && <i className="nav-live-dot" />}</NavLink>)}</div>
     <div className="sidebar-bottom"><NavLink to="/app/profile" className={({ isActive }) => cn('nav-item', isActive && 'nav-item-active')} onClick={() => setMobileNavOpen(false)}><Settings2 size={17} strokeWidth={1.8} /><span>{t('nav.profile')}</span></NavLink><div className="sidebar-user"><Avatar src={user.avatarUrl} name={user.displayName} size="sm" online /><div><strong>{user.firstName}</strong><span>@{user.username}</span></div><IconButton label={t('profile.signOut')} onClick={() => { void signOut() }}><LogOut size={15} /></IconButton></div></div>
   </>
 

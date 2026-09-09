@@ -301,6 +301,116 @@ export type HouseholdType = 'duo' | 'house'
 export type HouseholdRole = 'owner' | 'member'
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked' | 'declined'
 export type FollowStatus = 'pending' | 'accepted' | 'rejected' | 'blocked'
+export type SpaceType = 'duo' | 'household' | 'coaching'
+export type SpaceRole = 'owner' | 'coach' | 'athlete' | 'member' | 'admin'
+export type SpaceMemberStatus = 'pending' | 'active' | 'inactive'
+export type CoachAthleteStatus = 'pending' | 'active' | 'paused' | 'revoked' | 'ended'
+export type UserCapability = 'household_create' | 'coaching_create'
+export type StrategyManagementMode = 'self' | 'coach'
+export type StrategyManagementStatus = 'active' | 'ended'
+export type CoachPermission = 'strategy_view' | 'strategy_manage' | 'progress_view' | 'execution_view' | 'nutrition_view' | 'nutrition_manage' | 'notes_manage' | 'athlete_manage'
+
+export interface CoachNote {
+  id: string
+  content: string
+  visibility: 'private' | 'shared'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface StrategyVersionSummary {
+  id: string
+  versionNumber: number | null
+  status: 'draft' | 'published' | 'archived'
+  name: string
+  changeReason: string
+  createdBy: string | null
+  createdAt: string
+  publishedAt: string | null
+  snapshot?: Json
+}
+
+export interface StrategyManagement {
+  athleteUserId: string
+  managerUserId: string | null
+  spaceId: string | null
+  relationshipId: string | null
+  managementMode: StrategyManagementMode
+  status: StrategyManagementStatus
+  startedAt: string
+  endedAt: string | null
+}
+
+export interface Space {
+  id: string
+  ownerUserId: string
+  name: string
+  type: SpaceType
+  maxMembers: number
+  status: 'active' | 'archived'
+  metadata: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SpaceMember {
+  id: string
+  spaceId: string
+  userId: string
+  role: SpaceRole
+  status: SpaceMemberStatus
+  joinedAt: string
+  leftAt: string | null
+}
+
+export interface CoachAthleteRelationship {
+  id: string
+  spaceId: string
+  coachUserId: string
+  athleteUserId: string
+  status: CoachAthleteStatus
+  startedAt: string | null
+  endedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CoachingAthleteOverview extends CoachingAthlete {
+  dailyStepGoal: number
+  dailyCalorieGoal: number
+  weightKg: number
+  latestBodyWeight: number | null
+  latestSteps: number | null
+  lastWorkoutAt: string | null
+  workoutsLast7Days: number
+  volumeLast7Days: number
+  personalRecordsCount: number
+}
+
+export interface CoachingAthlete {
+  athleteUserId: string
+  displayName: string
+  publicHandle: string
+  publicCode: string
+  avatarUrl?: string
+  relationshipStatus: 'active'
+  relationshipStartedAt: string | null
+}
+
+export interface SpaceInvitation {
+  id: string
+  spaceId: string
+  inviterUserId: string
+  inviteeUserId: string
+  relationshipType: 'coach_athlete'
+  status: 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled'
+  expiresAt: string
+  acceptedAt: string | null
+  createdAt: string
+  spaceName?: string
+  inviterName?: string
+  inviterHandle?: string
+}
 
 export interface Household {
   id: string
@@ -388,6 +498,10 @@ export interface Exercise {
   imageUrl?: string
   source: string
   sourceUrl: string
+  ownerUserId?: string | null
+  ownerSpaceId?: string | null
+  visibility?: 'private' | 'space' | 'public' | 'system'
+  status?: 'active' | 'archived'
 }
 
 export interface WorkoutExercise {

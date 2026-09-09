@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { PublicProfile } from '../types'
+import type { ProfileFollow, PublicProfile } from '../types'
 
 interface Row { [key: string]: unknown }
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -55,6 +55,41 @@ export async function getPublicProfileByCode(code: string): Promise<PublicProfil
     .single()
   if (error || !data) return null
   return publicProfileFromRow(data as Row)
+}
+
+export async function getIncomingFollowRequests(): Promise<ProfileFollow[]> {
+  if (!supabase) return []
+  const result = await supabase.from('profile_follows').select('id, follower_id, followed_id, status, created_at, updated_at, accepted_at, profiles!profile_follows_follower_id_fkey(id, public_handle, public_code, display_name, first_name, avatar_url, discoverable)').eq('followed_id', (await supabase.auth.getUser()).data.user?.id ?? '').eq('status', 'pending').order('created_at', { ascending: false })
+  if (result.error) throw result.error
+  return (result.data ?? []).map((row: Record<string, unknown>) => ({ id: String(row.id), followerId: String(row.follower_id), followedId: String(row.followed_id), status: row.status as ProfileFollow['status'], createdAt: String(row.created_at), updatedAt: String(row.updated_at), acceptedAt: row.accepted_at ? String(row.accepted_at) : null }))
+}
+
+export async function respondToFollowRequest(followId: string, decision: 'accepted' | 'rejected'): Promise<void> {
+  if (!supabase) throw new Error('Supabase is not configured')
+  const result = await supabase.rpc('respond_to_follow_request', { follow_id: followId, decision })
+  if (result.error) throw result.error
+}
+
+export async function blockProfile(targetUserId: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase is not configured')
+  const result = await supabase.rpc('block_profile_follow', { target_user_id: targetUserId })
+  if (result.error) throw result.error
+}
+
+export async function unfollowProfile(targetUserId: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase is not configured')
+  const result = await supabase.rpc('unfollow_profile', { target_user_id: targetUserId })
+  if (result.error) throw result.error
+}
+
+export async function getFollowRelation(targetUserId: string): Promise<{ id: string; status: ProfileFollow['status']; direction: 'incoming' | 'outgoing' } | null> {
+  if (!supabase) return null
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return null
+  const result = await supabase.from('profile_follows').select('id, follower_id, followed_id, status').or(`follower_id.eq.${session.user.id},followed_id.eq.${session.user.id}`).or(`follower_id.eq.${targetUserId},followed_id.eq.${targetUserId}`).limit(20)
+  if (result.error) throw result.error
+  const row = (result.data ?? []).find((item) => item.follower_id === session.user.id && item.followed_id === targetUserId || item.follower_id === targetUserId && item.followed_id === session.user.id)
+  return row ? { id: String(row.id), status: row.status as ProfileFollow['status'], direction: row.follower_id === session.user.id ? 'outgoing' : 'incoming' } : null
 }
 
 export async function sendFollowRequest(targetUserId: string): Promise<void> {

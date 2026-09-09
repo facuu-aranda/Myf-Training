@@ -1,9 +1,9 @@
 import { AnimatePresence, motion, type MotionProps } from 'framer-motion'
 import { ArrowUpRight, Check, ChevronDown, LoaderCircle, Search, Sparkles, X } from 'lucide-react'
-import type { ButtonHTMLAttributes, InputHTMLAttributes, MouseEventHandler, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 import { cn } from '../../lib/utils'
 
-export function GlassCard({ children, className, hover = false, ...props }: { children: ReactNode; className?: string; hover?: boolean; onClick?: MouseEventHandler<HTMLDivElement> } & MotionProps) {
+export function GlassCard({ children, className, hover = false, ...props }: { children: ReactNode; className?: string; hover?: boolean } & HTMLAttributes<HTMLDivElement> & MotionProps) {
   return <motion.div className={cn('glass-card', hover && 'glass-card-hover', className)} {...props}>{children}</motion.div>
 }
 

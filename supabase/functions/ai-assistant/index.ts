@@ -127,6 +127,13 @@ Deno.serve(async (request) => {
 
   try {
     const context = await buildContext(client, authData.user.id, scopes, date)
+    const usage = await client.rpc('consume_my_ai_interaction')
+    if (usage.error) return response({ error: 'usage_unavailable' }, 503)
+    if (usage.data !== true) return response({ error: 'ai_quota_exceeded' }, 429)
+    let usageReserved = true
+    const releaseUsage = async () => {
+      if (usageReserved) { usageReserved = false; await client.rpc('release_my_ai_interaction') }
+    }
     const messages: Array<Record<string, unknown>> = [
       { role: 'system', content: `You are Train Together, a careful fitness and nutrition assistant. Answer in ${language === 'es' ? 'Spanish' : 'English'}. Use only the context and read-only tools available. Do not invent IDs or numeric nutrition values. Explain that calculations must come from the application domain. Never claim an action was executed; this MVP has no write tools. Do not provide medical diagnosis.\n\nContext scopes: ${scopes.join(', ')}\nContext JSON: ${JSON.stringify(context)}` },
       ...history,
@@ -140,17 +147,18 @@ Deno.serve(async (request) => {
         body: JSON.stringify({ model: Deno.env.get('AI_MODEL') || 'openai/gpt-oss-120b', temperature: 0.2, max_tokens: 700, messages, tools: toolsForScopes(scopes), tool_choice: 'auto' }),
       })
       if (!groqResponse.ok) {
+        await releaseUsage()
         if (groqResponse.status === 429) return response({ error: 'provider_rate_limit' }, 429)
         if (groqResponse.status >= 500) return response({ error: 'provider_unavailable' }, 503)
         return response({ error: 'provider_error' }, 502)
       }
       const completion = await groqResponse.json()
       const assistantMessage = completion?.choices?.[0]?.message
-      if (!assistantMessage || typeof assistantMessage !== 'object') return response({ error: 'empty_response' }, 502)
+      if (!assistantMessage || typeof assistantMessage !== 'object') { await releaseUsage(); return response({ error: 'empty_response' }, 502) }
       const toolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : []
       if (!toolCalls.length) {
         const answer = assistantMessage.content
-        if (typeof answer !== 'string' || !answer.trim()) return response({ error: 'empty_response' }, 502)
+        if (typeof answer !== 'string' || !answer.trim()) { await releaseUsage(); return response({ error: 'empty_response' }, 502) }
         return response({ answer: answer.trim(), scopes, date })
       }
       if (toolCalls.length > 4) return response({ error: 'tool_limit_exceeded' }, 422)
@@ -177,6 +185,7 @@ Deno.serve(async (request) => {
         }
       }
     }
+    await releaseUsage()
     return response({ error: 'tool_loop_limit' }, 422)
   } catch (error) {
     console.error('ai-assistant failed', error instanceof Error ? error.message : error)

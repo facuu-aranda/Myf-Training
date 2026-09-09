@@ -1,10 +1,10 @@
-import { UserPlus, Home, ArrowLeft } from 'lucide-react'
+import { UserPlus, Home, ArrowLeft, Ban } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageMotion } from '../components/PageMotion'
 import { Avatar, GlassCard, NeonButton, Toast } from '../components/ui'
-import { getPublicProfileByHandle, sendFollowRequest } from '../lib/people'
+import { blockProfile, getFollowRelation, getPublicProfileByHandle, sendFollowRequest, unfollowProfile } from '../lib/people'
 import { getMyHousehold, inviteToHousehold } from '../lib/household'
 import type { PublicProfile, Household, HouseholdMember } from '../types'
 
@@ -16,6 +16,7 @@ export function PublicProfilePage() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
   const [household, setHousehold] = useState<{ household: Household; members: HouseholdMember[] } | null>(null)
+  const [followRelation, setFollowRelation] = useState<{ id: string; status: 'pending' | 'accepted' | 'rejected' | 'blocked'; direction: 'incoming' | 'outgoing' } | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -28,6 +29,7 @@ export function PublicProfilePage() {
         ])
         setProfile(prof)
         setHousehold(house)
+        if (prof) setFollowRelation(await getFollowRelation(prof.id))
       } catch (err) {
         console.error(err)
       } finally {
@@ -40,11 +42,13 @@ export function PublicProfilePage() {
   const handleFollow = async () => {
     if (!profile) return
     try {
-      await sendFollowRequest(profile.id)
-      setToast(t('people.followSent'))
-    } catch {
-      setToast(t('people.followError'))
-    }
+      if (followRelation?.direction === 'outgoing' && (followRelation.status === 'pending' || followRelation.status === 'accepted')) { await unfollowProfile(profile.id); setFollowRelation(null); setToast(t('people.unfollowed')) }
+      else { await sendFollowRequest(profile.id); setFollowRelation({ id: '', status: 'pending', direction: 'outgoing' }); setToast(t('people.followSent')) }
+    } catch { setToast(t('people.followError')) }
+  }
+  const handleBlock = async () => {
+    if (!profile) return
+    try { await blockProfile(profile.id); setFollowRelation({ id: '', status: 'blocked', direction: 'outgoing' }); setToast(t('people.blocked')) } catch { setToast(t('people.blockError')) }
   }
 
   const handleInvite = async () => {
@@ -98,7 +102,7 @@ export function PublicProfilePage() {
           <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
             <NeonButton onClick={handleFollow}>
               <UserPlus size={16} />
-              {t('people.follow')}
+              {followRelation?.status === 'accepted' ? t('people.unfollow') : followRelation?.status === 'pending' && followRelation.direction === 'outgoing' ? t('people.cancelFollow') : t('people.follow')}
             </NeonButton>
             {canInvite && (
               <NeonButton variant="secondary" onClick={handleInvite}>
@@ -106,6 +110,7 @@ export function PublicProfilePage() {
                 {t('people.inviteToHousehold')}
               </NeonButton>
             )}
+            <NeonButton variant="ghost" onClick={handleBlock}><Ban size={16} />{t('people.block')}</NeonButton>
           </div>
         </GlassCard>
       </div>

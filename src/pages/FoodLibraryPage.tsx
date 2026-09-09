@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { PageMotion } from '../components/PageMotion'
 import { NutritionSubnav } from '../components/NutritionSubnav'
 import { GlassCard, Field, IconButton, LoadingState, Modal, NeonButton, SearchField, SectionHeading, SelectField, StatusPill, TextAreaField } from '../components/ui'
+import { FeatureGate } from '../components/FeatureGate'
 import { useAuth } from '../contexts/AuthContext'
 import { useFoodLibrary, type FoodLibraryScope } from '../hooks/useFoodLibrary'
 import { archiveCustomFood, createCustomFood, updateCustomFood } from '../lib/repository'
@@ -41,7 +42,7 @@ export function FoodLibraryPage() {
   return <PageMotion>
     <div className="page-header">
       <div><span className="eyebrow-label">{t('nav.nutrition')}</span><h1>{t('nutrition.foods')}</h1><p>{t('nutrition.foodsSubtitle')}</p></div>
-      <div className="food-library-header-actions"><StatusPill tone="violet"><Database size={13} />{totalCount || foods.length} {t('nutrition.results')}</StatusPill><NeonButton size="sm" onClick={() => { setEditorFoodId(null); setEditor({ name: '', brand: '', category: '', servingSize: 100, servingUnit: 'g', calories: 0, protein: null, carbs: null, fat: null, fiber: null, sugar: null, sodiumMg: null, saturatedFat: null, notes: '' }) }}><Plus size={14} />{t('customFood.create')}</NeonButton></div>
+      <div className="food-library-header-actions"><StatusPill tone="violet"><Database size={13} />{totalCount || foods.length} {t('nutrition.results')}</StatusPill><FeatureGate entitlement="custom_foods_create" plan="Plus"><NeonButton size="sm" onClick={() => { setEditorFoodId(null); setEditor({ name: '', brand: '', category: '', servingSize: 100, servingUnit: 'g', calories: 0, protein: null, carbs: null, fat: null, fiber: null, sugar: null, sodiumMg: null, saturatedFat: null, notes: '' }) }}><Plus size={14} />{t('customFood.create')}</NeonButton></FeatureGate></div>
     </div>
     <NutritionSubnav />
     <section className="food-library">

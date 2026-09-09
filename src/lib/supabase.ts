@@ -16,7 +16,7 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
     })
   : null
 
-export type RealtimeTable = 'workout_sessions' | 'exercise_sets' | 'daily_metrics' | 'personal_records' | 'activity_events' | 'food_logs' | 'food_log_items' | 'meal_plans' | 'meal_plan_days' | 'planned_meals' | 'grocery_lists' | 'grocery_list_items' | 'households' | 'household_members' | 'household_invitations' | 'profile_follows'
+export type RealtimeTable = 'workout_sessions' | 'exercise_sets' | 'daily_metrics' | 'personal_records' | 'activity_events' | 'food_logs' | 'food_log_items' | 'meal_plans' | 'meal_plan_days' | 'planned_meals' | 'grocery_lists' | 'grocery_list_items' | 'households' | 'household_members' | 'household_invitations' | 'profile_follows' | 'strategy_versions' | 'strategy_management' | 'coach_notes' | 'space_invitations' | 'coach_athlete_relationships'
 
 export function subscribeToFitnessChanges(onChange: () => void) {
   if (!supabase) return () => undefined

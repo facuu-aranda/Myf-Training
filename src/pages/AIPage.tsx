@@ -3,6 +3,8 @@ import { FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PageMotion } from '../components/PageMotion'
 import { GlassCard, NeonButton, TextAreaField } from '../components/ui'
+import { UpgradePrompt } from '../components/FeatureGate'
+import { useEntitlements } from '../lib/entitlements'
 import { useAuth } from '../contexts/AuthContext'
 import { confirmAICustomFood, sendAIMessage, type AIChatTurn } from '../lib/ai/client'
 import type { AIActionProposal, AIContextScope } from '../lib/ai/types'
@@ -27,6 +29,7 @@ function ActionSummary({ proposal, t, spanish }: { proposal: AIActionProposal; t
 export function AIPage() {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
+  const { has, isLoading: entitlementsLoading } = useEntitlements()
   const [messages, setMessages] = useState<AIChatTurn[]>([])
   const [input, setInput] = useState('')
   const [scopes, setScopes] = useState<AIContextScope[]>(availableScopes.map((scope) => scope.value))
@@ -37,6 +40,7 @@ export function AIPage() {
   const [notice, setNotice] = useState('')
 
   if (!user) return null
+  if (!entitlementsLoading && !has('ai_monthly_interactions')) return <PageMotion><UpgradePrompt entitlement="ai_monthly_interactions" plan="Plus" /></PageMotion>
 
   const toggleScope = (scope: AIContextScope) => setScopes((current) => current.includes(scope) ? current.filter((item) => item !== scope) : [...current, scope])
   const submit = async (event: FormEvent) => {

@@ -23,7 +23,7 @@ type MealPlanDayRow = { id: string; meal_plan_id: string; plan_date: string; not
 type PlannedMealRow = { id: string; meal_plan_day_id: string; meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'pre_workout' | 'post_workout' | 'other'; scheduled_time: string | null; food_id: string | null; recipe_id: string | null; quantity: number | null; unit: string | null; servings: number | null; planned_calories: number | null; planned_protein_g: number | null; planned_carbohydrates_g: number | null; planned_fat_g: number | null; planned_fiber_g: number | null; notes: string; status: 'planned' | 'completed' | 'logged'; completed_at: string | null; logged_at: string | null; created_at: string; updated_at: string }
 type GroceryListRow = { id: string; household_id: string; created_by: string | null; starts_on: string; ends_on: string; status: 'current' | 'completed' | 'archived'; created_at: string; updated_at: string }
 type GroceryItemRow = { id: string; grocery_list_id: string; food_id: string | null; name: string; name_es: string; name_en: string; category: string; source: 'planned' | 'manual' | 'recipe-derived'; calculated_quantity: number | null; calculated_unit: string | null; manual_quantity: number | null; manual_unit: string | null; suggested_quantity: number | null; suggested_unit: string | null; status: 'pending' | 'purchased'; notes: string; metadata: Json; created_at: string; updated_at: string }
-type ExerciseRow = { id: string; external_id: string; name: string; name_es: string; description: string; instructions: Json; muscle_group: string; target: string; category: string; equipment: string; video_url: string | null; thumbnail_url: string | null; image_url: string | null; source: string; source_url: string | null; metadata: Json; created_at: string; updated_at: string }
+type ExerciseRow = { id: string; external_id: string; owner_user_id: string | null; owner_space_id: string | null; visibility: 'private' | 'space' | 'public' | 'system'; status: 'active' | 'archived'; name: string; name_es: string; description: string; instructions: Json; muscle_group: string; target: string; category: string; equipment: string; video_url: string | null; thumbnail_url: string | null; image_url: string | null; source: string; source_url: string | null; metadata: Json; created_at: string; updated_at: string }
 type WorkoutDayRow = { id: string; user_id: string; name: string; name_es: string; description: string; weekday: number; order_index: number; active: boolean; estimated_minutes: number; created_at: string; updated_at: string }
 type WorkoutExerciseRow = { id: string; workout_day_id: string; exercise_id: string; order_index: number; sets: number; target_reps: number; target_seconds: number | null; target_weight: number; rest_seconds: number; notes: string; created_at: string; updated_at: string }
 type SessionRow = { id: string; user_id: string; workout_day_id: string | null; started_at: string; finished_at: string | null; duration_seconds: number; overall_feeling: number; energy: number; fatigue: number; mood: number; difficulty: number; notes: string; status: 'active' | 'completed' | 'abandoned'; created_at: string; updated_at: string }
@@ -31,6 +31,15 @@ type SetRow = { id: string; session_id: string; exercise_id: string; set_number:
 type DailyMetricRow = { id: string; user_id: string; date: string; steps: number; calories: number; body_weight: number | null; notes: string; created_at: string; updated_at: string }
 type PersonalRecordRow = { id: string; user_id: string; exercise_id: string | null; record_type: 'weight' | 'reps' | 'volume' | 'streak' | 'steps'; value: number; unit: string; achieved_at: string; label: string }
 type ActivityEventRow = { id: string; user_id: string; event_type: 'workout_completed' | 'step_goal_reached' | 'personal_record' | 'workout_started' | 'metric_updated'; title: string; description: string; entity_type: string; entity_id: string | null; metadata: Json; created_at: string }
+type SpaceRow = { id: string; owner_user_id: string; name: string; type: 'duo' | 'household' | 'coaching'; max_members: number; status: 'active' | 'archived'; metadata: Json; created_at: string; updated_at: string }
+type SpaceMemberRow = { id: string; space_id: string; user_id: string; role: 'owner' | 'coach' | 'athlete' | 'member' | 'admin'; status: 'pending' | 'active' | 'inactive'; joined_at: string; left_at: string | null; created_at: string; updated_at: string }
+type CoachAthleteRelationshipRow = { id: string; space_id: string; coach_user_id: string; athlete_user_id: string; status: 'pending' | 'active' | 'paused' | 'revoked' | 'ended'; started_at: string | null; ended_at: string | null; created_at: string; updated_at: string }
+type SpaceInvitationRow = { id: string; space_id: string; inviter_user_id: string; invitee_user_id: string; relationship_type: 'coach_athlete'; status: 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled'; expires_at: string; accepted_at: string | null; created_at: string; updated_at: string }
+type UserCapabilityRow = { id: string; user_id: string; capability: 'household_create' | 'coaching_create'; status: 'active' | 'disabled' | 'revoked'; source: 'system' | 'admin' | 'migration' | 'future_billing'; granted_at: string; expires_at: string | null; metadata: Json; created_at: string; updated_at: string }
+type StrategyManagementRow = { id: string; athlete_user_id: string; manager_user_id: string | null; space_id: string | null; relationship_id: string | null; management_mode: 'self' | 'coach'; status: 'active' | 'ended'; started_at: string; ended_at: string | null; created_at: string; updated_at: string }
+type CoachRelationshipPermissionRow = { id: string; relationship_id: string; permission: 'strategy_view' | 'strategy_manage' | 'progress_view' | 'execution_view' | 'nutrition_view' | 'nutrition_manage' | 'notes_manage' | 'athlete_manage'; enabled: boolean; created_at: string; updated_at: string }
+type CoachNoteRow = { id: string; space_id: string; relationship_id: string; coach_user_id: string; athlete_user_id: string; visibility: 'private' | 'shared'; content: string; created_at: string; updated_at: string; deleted_at: string | null }
+type AuditLogRow = { id: string; actor_user_id: string; target_user_id: string | null; space_id: string | null; relationship_id: string | null; action: string; entity_type: string; entity_id: string | null; metadata: Json; created_at: string }
 
 export interface Database {
   public: {
@@ -66,7 +75,16 @@ export interface Database {
       daily_metrics: Table<DailyMetricRow>
       personal_records: Table<PersonalRecordRow>
       activity_events: Table<ActivityEventRow>
-      strategy_versions: Table<{ id: string; user_id: string; name: string; starts_on: string; ends_on: string | null; is_current: boolean; snapshot: Json; created_at: string }>
+      spaces: Table<SpaceRow>
+      space_members: Table<SpaceMemberRow>
+      coach_athlete_relationships: Table<CoachAthleteRelationshipRow>
+      space_invitations: Table<SpaceInvitationRow>
+      user_capabilities: Table<UserCapabilityRow>
+      strategy_management: Table<StrategyManagementRow>
+      coach_relationship_permissions: Table<CoachRelationshipPermissionRow>
+      coach_notes: Table<CoachNoteRow>
+      audit_logs: Table<AuditLogRow>
+      strategy_versions: Table<{ id: string; user_id: string; created_by: string | null; space_id: string | null; relationship_id: string | null; name: string; starts_on: string; ends_on: string | null; is_current: boolean; snapshot: Json; version_number: number | null; status: 'draft' | 'published' | 'archived'; change_reason: string; effective_from: string | null; effective_until: string | null; published_at: string | null; created_at: string }>
     }
     Views: {
       public_profiles: { Row: { id: string; public_handle: string; public_code: string; display_name: string; first_name: string; avatar_url: string | null; discoverable: boolean }; Relationships: [] }
@@ -83,6 +101,33 @@ export interface Database {
       create_custom_food: { Args: { input: Json }; Returns: string }
       update_custom_food: { Args: { p_food_id: string; input: Json }; Returns: boolean }
       archive_custom_food: { Args: { p_food_id: string }; Returns: boolean }
+      is_space_member: { Args: { target_space_id: string; target_user_id?: string }; Returns: boolean }
+      is_space_owner: { Args: { target_space_id: string; target_user_id?: string }; Returns: boolean }
+      create_coaching_space: { Args: { space_name: string; member_limit?: number }; Returns: string }
+      invite_coaching_athlete: { Args: { target_space_id: string; target_user_id: string }; Returns: string }
+      accept_coaching_invitation: { Args: { invitation_id: string }; Returns: boolean }
+      cancel_coaching_invitation: { Args: { invitation_id: string }; Returns: boolean }
+      resend_coaching_invitation: { Args: { invitation_id: string }; Returns: boolean }
+      get_coaching_athletes: { Args: { target_space_id: string }; Returns: Json[] }
+      remove_coaching_athlete: { Args: { target_space_id: string; target_athlete_id: string }; Returns: boolean }
+      get_coach_athlete_overview: { Args: { target_space_id: string; target_athlete_id: string }; Returns: Json[] }
+      has_capability: { Args: { target_capability: string; target_user_id?: string }; Returns: boolean }
+      get_strategy_management: { Args: { target_athlete_id: string }; Returns: Json[] }
+      has_coach_permission: { Args: { target_space_id: string; target_athlete_id: string; target_permission: string; actor_user_id?: string }; Returns: boolean }
+      get_coach_athlete_strategy: { Args: { target_space_id: string; target_athlete_id: string }; Returns: Json }
+      update_coach_strategy_goals: { Args: { target_space_id: string; target_athlete_id: string; step_goal: number; calorie_goal: number; protein_goal: number; carbs_goal: number; fats_goal: number; fiber_goal: number }; Returns: boolean }
+      create_coach_strategy_draft: { Args: { target_space_id: string; target_athlete_id: string; reason?: string }; Returns: string }
+      publish_coach_strategy: { Args: { draft_version_id: string }; Returns: string }
+      save_coach_workout_plan: { Args: { target_space_id: string; target_athlete_id: string; workout_days: Json }; Returns: boolean }
+      restore_coach_strategy_version: { Args: { source_version_id: string; reason?: string }; Returns: string }
+      start_coach_strategy_management: { Args: { target_space_id: string; target_athlete_id: string }; Returns: boolean }
+      release_coach_strategy_management: { Args: { target_athlete_id: string }; Returns: boolean }
+      create_coach_note: { Args: { target_space_id: string; target_athlete_id: string; note_content: string; note_visibility?: string }; Returns: string }
+      get_coach_notes: { Args: { target_space_id: string; target_athlete_id: string }; Returns: Json[] }
+      create_custom_exercise: { Args: { exercise_name: string; exercise_name_es?: string; exercise_description?: string; exercise_instructions?: Json; exercise_muscle_group?: string; exercise_target?: string; exercise_category?: string; exercise_equipment?: string; target_visibility?: string; target_space_id?: string }; Returns: string }
+      respond_to_follow_request: { Args: { follow_id: string; decision: string }; Returns: boolean }
+      block_profile_follow: { Args: { target_user_id: string }; Returns: boolean }
+      unfollow_profile: { Args: { target_user_id: string }; Returns: boolean }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

@@ -1696,7 +1696,80 @@ La pasarela de pago todavía no está implementada, y tampoco existe aún la fou
 
 ---
 
-## 29. Conclusión
+## 29. Estado de Coaching, AI y trabajo pendiente
+
+### Coaching Foundation
+
+La foundation de Coaching se implementó como extensión aditiva de Household, sin convertir Coach en un rol global de usuario. Actualmente existen:
+
+- `spaces` con tipos `duo`, `household` y `coaching`;
+- `space_members` con roles y estados;
+- `coach_athlete_relationships`;
+- `space_invitations`;
+- `user_capabilities` con `coaching_create`;
+- `strategy_management` con modos `self` y `coach`;
+- RPCs para crear Spaces, invitar atletas, aceptar invitaciones, listar atletas autorizados, overview privado y remover atletas de forma lógica;
+- Coach Dashboard inicial en `/app/coach`;
+- `/app/coach/athletes/:spaceId/:athleteId` como overview privado autorizado;
+- búsqueda de atletas, avatars, roster activo y modal de confirmación para remover;
+- snapshot inicial de `strategy_versions` desde Strategy;
+- `strategy_management` con estado `self/coach`;
+- matriz inicial de permisos por relación Coach/Athlete y helper `has_coach_permission`;
+- RPC de lectura scoped de Strategy y editor inicial de objetivos con `strategy_manage`;
+- estado `strategy_management` mostrado en Athlete Overview;
+- creación inicial de Strategy drafts scoped al atleta, Space y relación activa;
+- Coach Notes privadas y `audit_logs` para acciones sensibles;
+- Strategy version metadata, creación de drafts y RPC de publicación atómica preparados para el siguiente paso;
+- Custom Exercises sin media con ownership privado o por Space preparados en migración incremental, con ownership/visibility en tipos y biblioteca;
+- Realtime selectivo preparado para Strategy, management, notes y relaciones Coach/Athlete;
+- comando CI reproducible `yarn ci`;
+- accesibilidad básica en cards accionables de ejercicios y personas;
+- `db:check` valida las tablas Realtime de Coaching y reporta migraciones faltantes.
+
+El último `yarn db:check` remoto validó el estado base con `spaces`, `space_members`, `coach_athlete_relationships` y `space_invitations` existentes. Las funciones RPC incrementales de directorio, autorización, avatar y baja deben mantenerse sincronizadas con sus migraciones versionadas.
+
+### Pendientes prioritarios
+
+1. Matriz granular de permisos Coach/Athlete.
+2. Bloqueo de campos prescritos en Strategy para atletas coach-managed.
+3. Cancelación, expiración y reenvío de invitaciones.
+4. Listado, comparación y restauración de `strategy_versions`.
+5. Coach Notes y audit log.
+6. Draft/Review/Publish para planes de entrenamiento y nutrición.
+7. Compatibility layer completa entre `households` y `spaces`.
+8. Custom Exercises, moderación y media assets.
+9. AI Actions: permanecen en `docs/AI_BACKLOG.md` después del rollback de la optimización que introdujo regresiones de tool calling.
+10. Billing, subscriptions, entitlements y athlete seats: última etapa explícita.
+
+El detalle completo de trabajo pendiente y decisiones abiertas está en [`REMAINING_WORK_AND_DECISIONS.md`](./REMAINING_WORK_AND_DECISIONS.md).
+
+---
+
+## 30. Fundación comercial (2026-09-09)
+
+Se agregó la primera capa comercial, desacoplada del proveedor de pagos:
+
+- catálogo canónico `free`, `plus`, `couple`, `household`, `coach_starter`, `coach_pro` y `coach_studio` reservado;
+- `plans`, `plan_prices`, `entitlement_definitions`, `plan_entitlements` y `entitlement_grants`;
+- `subscriptions`, `billing_customers`, `subscription_events`, `usage_counters`, `billing_provider_prices` y `billing_checkout_intents`;
+- RPC `get_my_effective_entitlements()` con fallback Free, precedencia OR/máximo/unión y grants de sponsorship;
+- `src/lib/entitlements.ts`, `FeatureGate` y pantalla `/app/billing` como capa UX;
+- seed comercial sintético protegido por `ALLOW_DEMO_SEED`, `DEMO_SEED_PASSWORD` y rechazo de entornos productivos; ahora incluye Household familiar, espacios Coach Starter/Pro, atletas, relaciones activas y grants de sponsorship;
+- Landing alineada con planes y precios ARS centralizados, sin testimonials falsos;
+- mapping de Mercado Pago preparado en base de datos, sin IDs inventados ni credenciales en frontend;
+- gates server-side para custom foods y custom exercises mediante triggers y entitlements;
+- cuota AI mensual con `usage_counters`, RPCs de consumo/liberación/consulta y enforcement en la Edge Function `ai-assistant`;
+- Strategy versions protegidas por entitlement en UI y trigger server-side;
+- History limitado a `history_days` y rangos de Progress limitados por `progress_ranges` en la experiencia personal;
+- descarga y native share de tarjetas PNG protegidos por `exports_personal`; la vista previa básica permanece disponible;
+- Progress separa el resumen básico Free de las analytics personales avanzadas, que requieren `advanced_personal_analytics`;
+- `/app/billing` consulta la suscripción efectiva real y crea checkout intents validados server-side;
+- Edge Functions desplegadas para crear checkout Sandbox, consultar estado y recibir webhooks idempotentes; el webhook permanece bloqueado hasta configurar la firma secreta de Mercado Pago;
+- contrato de firma y mapeo de estados de Mercado Pago cubierto por tests unitarios.
+
+Los anuncios no se sirven todavía. Sólo queda preparado el entitlement `ad_free`; provider, slots, consentimiento, targeting y métricas se difieren a una fase futura.
+
+## 31. Conclusión
 
 El proyecto ya constituye una aplicación funcional de entrenamiento para dos personas, no únicamente un mockup visual: tiene navegación protegida, estado de dominio, persistencia Supabase, migración PostgreSQL, RLS, triggers, Realtime, seeds, analítica, tests y build de producción.
 

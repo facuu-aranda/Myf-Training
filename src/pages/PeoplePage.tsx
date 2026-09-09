@@ -1,11 +1,11 @@
 import { Search } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { PageMotion } from '../components/PageMotion'
 import { Avatar, GlassCard, NeonButton } from '../components/ui'
-import { searchPublicProfiles, getPublicProfileByCode } from '../lib/people'
-import type { PublicProfile } from '../types'
+import { getIncomingFollowRequests, getPublicProfileByCode, respondToFollowRequest, searchPublicProfiles } from '../lib/people'
+import type { ProfileFollow, PublicProfile } from '../types'
 
 export function PeoplePage() {
   const { t } = useTranslation()
@@ -15,6 +15,13 @@ export function PeoplePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [searched, setSearched] = useState(false)
+  const [followRequests, setFollowRequests] = useState<ProfileFollow[]>([])
+
+  useEffect(() => { void getIncomingFollowRequests().then(setFollowRequests).catch(() => undefined) }, [])
+
+  const handleFollowResponse = async (request: ProfileFollow, decision: 'accepted' | 'rejected') => {
+    try { await respondToFollowRequest(request.id, decision); setFollowRequests((current) => current.filter((item) => item.id !== request.id)) } catch { setError(true) }
+  }
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,6 +60,7 @@ export function PeoplePage() {
         </div>
       </div>
 
+      {followRequests.length > 0 && <div className="follow-requests-card"><GlassCard><span className="eyebrow-label">{t('people.followRequests')}</span><h2>{t('people.pendingFollows')}</h2>{followRequests.map((request) => <div className="follow-request-row" key={request.id}><span>{t('people.newFollowRequest')}</span><div><NeonButton size="sm" onClick={() => { void handleFollowResponse(request, 'accepted') }}>{t('people.acceptFollow')}</NeonButton><NeonButton size="sm" variant="ghost" onClick={() => { void handleFollowResponse(request, 'rejected') }}>{t('people.rejectFollow')}</NeonButton></div></div>)}</GlassCard></div>}
       <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
           <div className="search-bar" style={{ flex: 1, margin: 0 }}>
@@ -93,7 +101,7 @@ export function PeoplePage() {
                 cursor: 'pointer',
                 transition: 'transform 0.2s, background 0.2s',
               }}
-              onClick={() => navigate(`/app/people/${profile.publicHandle}`)}
+              role="button" tabIndex={0} onClick={() => navigate(`/app/people/${profile.publicHandle}`)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); navigate(`/app/people/${profile.publicHandle}`) } }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <Avatar src={profile.avatarUrl} name={profile.displayName} size="md" />

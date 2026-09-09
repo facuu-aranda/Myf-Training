@@ -7,6 +7,7 @@ import { AppShell } from './layouts/AppShell'
 const HouseholdPage = lazy(async () => ({ default: (await import('./pages/HouseholdPage')).HouseholdPage }))
 const DashboardPage = lazy(async () => ({ default: (await import('./pages/DashboardPage')).DashboardPage }))
 const ExerciseLibraryPage = lazy(async () => ({ default: (await import('./pages/ExerciseLibraryPage')).ExerciseLibraryPage }))
+const CustomExercisePage = lazy(async () => ({ default: (await import('./pages/CustomExercisePage')).CustomExercisePage }))
 const FoodLibraryPage = lazy(async () => ({ default: (await import('./pages/FoodLibraryPage')).FoodLibraryPage }))
 const RecipesPage = lazy(async () => ({ default: (await import('./pages/RecipesPage')).RecipesPage }))
 const FoodLogPage = lazy(async () => ({ default: (await import('./pages/FoodLogPage')).FoodLogPage }))
@@ -26,6 +27,10 @@ const PeoplePage = lazy(async () => ({ default: (await import('./pages/PeoplePag
 const PublicProfilePage = lazy(async () => ({ default: (await import('./pages/PublicProfilePage')).PublicProfilePage }))
 const OnboardingPage = lazy(async () => ({ default: (await import('./pages/OnboardingPage')).OnboardingPage }))
 const AIPage = lazy(async () => ({ default: (await import('./pages/AIPage')).AIPage }))
+const CoachDashboardPage = lazy(async () => ({ default: (await import('./pages/CoachDashboardPage')).CoachDashboardPage }))
+const CoachAthletePage = lazy(async () => ({ default: (await import('./pages/CoachAthletePage')).CoachAthletePage }))
+const BillingPage = lazy(async () => ({ default: (await import('./pages/BillingPage')).BillingPage }))
+const BillingReturnPage = lazy(async () => ({ default: (await import('./pages/BillingReturnPage')).BillingReturnPage }))
 
 function LoadingPage() {
   const { t } = useTranslation()
@@ -40,5 +45,5 @@ function ProtectedRoute() {
 }
 
 export function App() {
-  return <Suspense fallback={<LoadingPage />}><Routes><Route path="/" element={<LandingPage />} /><Route path="/login" element={<LoginPage />} /><Route element={<ProtectedRoute />}><Route path="/app" element={<DashboardPage />} /><Route path="/app/onboarding" element={<OnboardingPage />} /><Route path="/app/strategy" element={<StrategyPage />} /><Route path="/app/live" element={<LiveTrainingPage />} /><Route path="/app/manual" element={<ManualTrainingPage />} /><Route path="/app/quick-log" element={<QuickLogPage />} /><Route path="/app/progress" element={<ProgressPage />} /><Route path="/app/history" element={<HistoryPage />} /><Route path="/app/household" element={<HouseholdPage />} /><Route path="/app/people" element={<PeoplePage />} /><Route path="/app/people/:handle" element={<PublicProfilePage />} /><Route path="/app/ai" element={<AIPage />} /><Route path="/app/exercises" element={<ExerciseLibraryPage />} /><Route path="/app/nutrition/foods" element={<FoodLibraryPage />} /><Route path="/app/nutrition/recipes" element={<RecipesPage />} /><Route path="/app/nutrition/log" element={<FoodLogPage />} /><Route path="/app/nutrition/planner" element={<MealPlannerPage />} /><Route path="/app/nutrition/grocery" element={<GroceryPage />} /><Route path="/app/nutrition/insights" element={<NutritionInsightsPage />} /><Route path="/app/profile" element={<ProfilePage />} /></Route><Route path="*" element={<Navigate to="/" replace />} /></Routes></Suspense>
+  return <Suspense fallback={<LoadingPage />}><Routes><Route path="/" element={<LandingPage />} /><Route path="/login" element={<LoginPage />} /><Route element={<ProtectedRoute />}><Route path="/app" element={<DashboardPage />} /><Route path="/app/onboarding" element={<OnboardingPage />} /><Route path="/app/strategy" element={<StrategyPage />} /><Route path="/app/live" element={<LiveTrainingPage />} /><Route path="/app/manual" element={<ManualTrainingPage />} /><Route path="/app/quick-log" element={<QuickLogPage />} /><Route path="/app/progress" element={<ProgressPage />} /><Route path="/app/history" element={<HistoryPage />} /><Route path="/app/household" element={<HouseholdPage />} /><Route path="/app/people" element={<PeoplePage />} /><Route path="/app/people/:handle" element={<PublicProfilePage />} /><Route path="/app/ai" element={<AIPage />} /><Route path="/app/coach" element={<CoachDashboardPage />} /><Route path="/app/coach/athletes/:spaceId/:athleteId" element={<CoachAthletePage />} /><Route path="/app/billing" element={<BillingPage />} /><Route path="/app/billing/return" element={<BillingReturnPage />} /><Route path="/app/exercises" element={<ExerciseLibraryPage />} /><Route path="/app/exercises/custom" element={<CustomExercisePage />} /><Route path="/app/nutrition/foods" element={<FoodLibraryPage />} /><Route path="/app/nutrition/recipes" element={<RecipesPage />} /><Route path="/app/nutrition/log" element={<FoodLogPage />} /><Route path="/app/nutrition/planner" element={<MealPlannerPage />} /><Route path="/app/nutrition/grocery" element={<GroceryPage />} /><Route path="/app/nutrition/insights" element={<NutritionInsightsPage />} /><Route path="/app/profile" element={<ProfilePage />} /></Route><Route path="*" element={<Navigate to="/" replace />} /></Routes></Suspense>
 }

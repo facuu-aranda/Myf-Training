@@ -6,6 +6,7 @@ import { ShareCardModal } from '../components/ShareCardModal'
 import { EmptyState, GlassCard, Modal, StatusPill } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { useFitness } from '../hooks/useFitness'
+import { useEntitlements } from '../lib/entitlements'
 import { calculateSessionVolume } from '../lib/analytics'
 import { formatDate, formatNumber, localizedName } from '../lib/utils'
 import type { WorkoutSession } from '../types'
@@ -14,11 +15,19 @@ export function HistoryPage() {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const { workoutDays, sessions, exercises } = useFitness()
+  const { value } = useEntitlements()
+  const historyDays = Number(value('history_days', 30))
   const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null)
   const [shareSessionOpen, setShareSessionOpen] = useState(false)
   const locale = i18n.language.startsWith('es') ? 'es-ES' : 'en-US'
   const userId = user?.id ?? ''
-  const history = useMemo(() => sessions.filter((session) => session.userId === userId && session.status !== 'active').sort((a, b) => new Date(b.finishedAt ?? b.startedAt).getTime() - new Date(a.finishedAt ?? a.startedAt).getTime()), [sessions, userId])
+  const history = useMemo(() => {
+    const cutoff = historyDays === -1 ? null : Date.now() - historyDays * 24 * 60 * 60 * 1000
+    return sessions.filter((session) => {
+      const timestamp = new Date(session.finishedAt ?? session.startedAt).getTime()
+      return session.userId === userId && session.status !== 'active' && (cutoff === null || timestamp >= cutoff)
+    }).sort((a, b) => new Date(b.finishedAt ?? b.startedAt).getTime() - new Date(a.finishedAt ?? a.startedAt).getTime())
+  }, [historyDays, sessions, userId])
   if (!user) return null
   return <PageMotion><div className="page-header"><div><span className="eyebrow-label">{t('nav.history')}</span><h1>{t('history.title')}</h1><p>{t('history.subtitle')}</p></div><div className="page-header-actions"><StatusPill tone="violet" dot>{history.filter((session) => session.status === 'completed').length} {t('history.completed').toLowerCase()}</StatusPill>{history[0] && <button type="button" className="neon-button neon-button-secondary neon-button-sm" onClick={() => setShareSessionOpen(true)}><Share2 size={13} />{t('share.button')}</button>}</div></div>{history.length ? <div className="history-list">{history.map((session) => { const day = workoutDays.find((item) => item.id === session.workoutDayId); const date = new Date(session.finishedAt ?? session.startedAt); return <GlassCard key={session.id} className="history-row" hover><div className="history-date"><strong>{date.getDate()}</strong>{date.toLocaleDateString(locale, { month: 'short' })}</div><div className="history-copy"><strong>{day ? localizedName(day, locale.startsWith('es') ? 'es' : 'en') : t('dashboard.todayWorkout')}</strong><span>{formatDate(date, locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></div><div className="history-metric"><span><Clock3 size={11} /> {t('history.duration')}</span><strong>{Math.round(session.durationSeconds / 60)} {t('common.min')}</strong></div><div className="history-metric"><span><Dumbbell size={11} /> {t('history.volume')}</span><strong>{formatNumber(calculateSessionVolume(session))} {t('common.kg')}</strong></div><StatusPill tone={session.status === 'completed' ? 'green' : 'orange'}>{session.status === 'completed' ? t('history.completed') : t('history.abandoned')}</StatusPill><button type="button" className="icon-button" aria-label={t('history.details')} onClick={() => setSelectedSession(session)}><ChevronRight size={16} /></button></GlassCard> })}</div> : <GlassCard><EmptyState icon={<CalendarDays size={19} />} title={t('history.noSessions')} /></GlassCard>}<Modal open={Boolean(selectedSession)} onClose={() => setSelectedSession(null)} title={t('history.details')} size="lg">{selectedSession && <SessionDetail session={selectedSession} day={workoutDays.find((item) => item.id === selectedSession.workoutDayId)} exercises={exercises} locale={locale} t={t} />}</Modal><ShareCardModal open={shareSessionOpen} onClose={() => setShareSessionOpen(false)} title={t('history.title')} subtitle={t('history.subtitle')} tag={t('quick.finishEyebrow')} profiles={[user]} baseImageSrc="/share/workout-base.png" fileName="workout.png" stats={history[0] ? [{ label: t('live.duration'), value: `${Math.round(history[0].durationSeconds / 60)} min` }, { label: t('history.volume'), value: `${formatNumber(calculateSessionVolume(history[0]))} kg`, accent: '#6ee7f9' }, { label: t('common.sets'), value: formatNumber(history[0].sets.length), accent: '#ed7bea' }, { label: t('history.feeling'), value: `${history[0].overallFeeling}/5`, accent: '#f5ad74' }] : []} /></PageMotion>
 }
